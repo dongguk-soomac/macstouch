@@ -25,7 +25,7 @@ class KioskApp(ctk.CTk):
         self.category_frame = ctk.CTkFrame(self.main_frame)
         self.category_frame.pack(side="top", fill="x")
 
-        self.categories = ["추천메뉴", "커스텀 메뉴", "음료"]
+        self.categories = ["추천메뉴", "커스텀 메뉴"]
         for category in self.categories:
             ctk.CTkButton(self.category_frame, text=category, font=("Arial", 14)).pack(side="left", padx=5, pady=5, expand=True)
 
