@@ -8,8 +8,10 @@ buttonSize0 = 24
 buttonSize1 = 16
 buttonSize2 = 14
 
-width = 500
-height = 480
+scale = 50
+
+width = 9 * scale
+height = 16 * scale
 
 # 메인 앱 클래스
 class KioskApp(ctk.CTk):
