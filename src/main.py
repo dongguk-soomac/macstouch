@@ -120,8 +120,12 @@ class Request:
     def workspace_req(self, args):
         pass
 
+    def task_control(self, step):
+        pass
+
 
 def main():
+    global IngId, TaskList
     rospy.init_node("main_node")
 
     req = Request()
@@ -131,10 +135,16 @@ def main():
     vision = Vision()
     control = Control()
 
+    task = Task()
+    step = 0
+    status = None
+
     while rospy.is_shutdown():
         if IngId is None and len(OrderList) != 0:
             IngId = OrderList[0].id
-
+            TaskList = Task.order_to_task()
+        
+        status = req.task_control(step)
 
 
 if __name__ == "__main__":
