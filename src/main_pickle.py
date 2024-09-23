@@ -2,7 +2,7 @@
 # -- coding: utf-8 --
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from macstouch.msg import order, state, vision_info, control_info, error, material
 
 import os, sys
@@ -82,7 +82,7 @@ class WorkSpace:
 
 class Vision:
     def __init__(self) -> None:
-        self.vision_sub = rospy.Subscriber('/pick_coord', vision_info. self.vision_callback, queue_size=1)
+        self.vision_sub = rospy.Subscriber('/pick_coord', vision_info, self.vision_callback, queue_size=1)
         self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
 
     def vision_callback(self, msg):
@@ -92,7 +92,7 @@ class Vision:
 class Control:
     def __init__(self) -> None:
         self.state_sub = rospy.Subscriber('/robot_state', state, self.state_callback, queue_size=1)
-        self.done_sub = rospy.Subscriber('/done', bool, self.done_callback)
+        self.done_sub = rospy.Subscriber('/done', Bool, self.done_callback)
         self.error_pub = rospy.Publisher('/error_info', error)
 
         self.control_done = False
@@ -175,7 +175,7 @@ def main():
     material = 3
 
     while not rospy.is_shutdown():
-        pickle = input("Press 'y' to start pickle test")
+        pickle = input("Press 'y' to start pickle test:     ")
 
         if pickle == 'y':
 
