@@ -83,7 +83,7 @@ class WorkSpace:
 class Vision:
     def __init__(self) -> None:
         self.vision_sub = rospy.Subscriber('/pick_coord', vision_info. self.vision_callback, queue_size=1)
-        self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None} * len(MaterialList)]
+        self.coords = self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
 
     def vision_callback(self, msg):
         self.coords[msg.material] = {'ready': True, 'grip_mode': msg.grip_mode, 'coord': msg.coord, 'size': msg.size}
