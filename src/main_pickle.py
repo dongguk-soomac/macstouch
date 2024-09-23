@@ -12,7 +12,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import numpy as np
 
-from macstouch_config import *
+from macstouch_config import MaterialList, WeightLimit, ModeList
 from task_maker import Task
 
 
@@ -83,7 +83,7 @@ class WorkSpace:
 class Vision:
     def __init__(self) -> None:
         self.vision_sub = rospy.Subscriber('/pick_coord', vision_info. self.vision_callback, queue_size=1)
-        self.coords = self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
+        self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
 
     def vision_callback(self, msg):
         self.coords[msg.material] = {'ready': True, 'grip_mode': msg.grip_mode, 'coord': msg.coord, 'size': msg.size}
@@ -95,11 +95,13 @@ class Control:
         self.done_sub = rospy.Subscriber('/done', bool, self.done_callback)
         self.error_pub = rospy.Publisher('/error_info', error)
 
+        self.control_done = False
+
     def state_callback(self, msg):
         pass
 
     def done_callback(self, msg):
-        pass
+        self.control_done = True
 
     def error_check(self):
         pass
@@ -111,11 +113,41 @@ class Request:
         self.control_pub = rospy.Publisher('/control_req', control_info)
         self.workspace_pub = rospy.Publisher('/workspace', String)
 
-    def vision_req(self, args):
-        pass
+    def vision_req(self, material):
+        self.vision_pub.publish(MaterialList[material])
 
-    def control_req(self, args):
-        pass
+    def control_req(self, mode, material=None, grip_mode=None, coord=None, size=None):
+        request = control_info()
+
+        if mode == 0: # init_pos
+            request.mode = ModeList[mode]
+            request.material = -1
+            request.grip_mode = 'x'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 30
+
+        elif mode == 1: # vision
+            request.mode = ModeList[mode]
+            request.material = MaterialList[material]
+            request.grip_mode = 'x'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 0
+
+        elif mode == 2: # pnp
+            request.mode = ModeList[mode]
+            request.material = MaterialList[material]
+            request.grip_mode = grip_mode
+            request.coord = coord
+            request.grip_size = 30
+
+        elif mode == 3: # tool_return
+            request.mode = ModeList[mode]
+            request.material = MaterialList[material]
+            request.grip_mode = 'x'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 0
+
+        self.control_pub.publish(request)
 
     def workspace_req(self, args):
         pass
@@ -139,13 +171,39 @@ def main():
     step = 0
     status = None
 
-    while rospy.is_shutdown():
-        if IngId is None and len(OrderList) != 0:
-            IngId = OrderList[0].id
-            TaskList = Task.order_to_task()
-        
-        status = req.task_control(step)
+    mode = 2
+    material = 3
 
+    while not rospy.is_shutdown():
+        pickle = input("Press 'y' to start pickle test")
+
+        if pickle == 'y':
+
+            # control: vision - pickle
+            req.control_req(mode=1, material=material)
+            while control.control_done == False:
+                rospy.sleep(0.2)
+
+            # vision: pickle
+            control.control_done = False
+            req.vision_req(material=material)
+            while vision.coords[material]['ready'] == False:
+                rospy.sleep(0.2)
+
+            # control: pnp - pickle
+            vision.coords[material]['ready'] = False
+            req.control_req(mode=2, material=material,
+                            grip_mode=vision.coords[material]['grip_mode'],
+                            coord=vision.coords[material]['coord'],
+                            size=vision.coords[material]['size'])
+            while control.control_done == False:
+                rospy.sleep(0.2)
+
+            # control: init_pos
+            req.control_req(mode=0)
+            while control.control_done == False:
+                rospy.sleep(0.2)
+    
 
 if __name__ == "__main__":
     main()
