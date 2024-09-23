@@ -1,9 +1,13 @@
+import os, sys
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
 # 이미지 파일 불러오기
-image_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/data/IMG_2803.png'  # 여기에 파일 경로를 입력하세요
+image_path = './data/IMG_2803.png'  # 여기에 파일 경로를 입력하세요
 image = cv2.imread(image_path)
 
 # BGR 채널을 RGB로 변환
