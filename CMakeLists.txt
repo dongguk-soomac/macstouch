@@ -53,6 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
   FILES
   control_info.msg
+  action_info.msg
   error.msg
   material.msg
   order.msg
@@ -211,3 +212,11 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+
+catkin_install_python(PROGRAMS
+  src/control/control.py
+  src/control/main_test.py
+  src/control/client_test.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}  
+)
