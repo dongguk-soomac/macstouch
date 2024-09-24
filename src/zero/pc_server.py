@@ -104,8 +104,8 @@ class Action:
         # 5-1. "오프셋"으로 이동
         setdata = self.make_str("MoveOffset", self.format_array(self.pnp_offset))
         send_data(setdata)
-        # 5-2. 재료 위치로 이동 (오프셋만큼 이동)
-        setdata = self.make_str("MovePoint", "vision", self.format_array(index))
+        # 5-2. 버거 위치로 이동
+        setdata = self.make_str("MovePoint", "over_burger")
         send_data(setdata)
         # 5-3. 그리퍼
         setdata = self.make_str("Gripper", False)
