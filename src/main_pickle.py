@@ -181,12 +181,14 @@ def main():
 
             # control: vision - pickle
             req.control_req(mode=1, material=material)
+            print("Requested control: vision - pickle")
             while control.control_done == False:
                 rospy.sleep(0.2)
 
             # vision: pickle
             control.control_done = False
             req.vision_req(material=material)
+            print("Requested vision: pickle")
             while vision.coords[material]['ready'] == False:
                 rospy.sleep(0.2)
 
@@ -196,6 +198,7 @@ def main():
                             grip_mode=vision.coords[material]['grip_mode'],
                             coord=vision.coords[material]['coord'],
                             size=vision.coords[material]['size'])
+            print("Requested control: pnp - pickle")
             while control.control_done == False:
                 rospy.sleep(0.2)
 
