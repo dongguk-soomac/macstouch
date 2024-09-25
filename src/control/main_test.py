@@ -52,7 +52,7 @@ def main():
             control_data.mode = 'pnp'
             control_data.material = 3
             control_data.grip_mode = '0'
-            control_data.coord = [200,200,200,90,90,90]
+            control_data.coord = [562, 0, 180,-90, 0, -90]
             control_data.grip_size = 30
             control_req.publish(control_data)
             print('Mode : pnp')

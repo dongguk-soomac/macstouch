@@ -215,8 +215,19 @@ include_directories(
 
 
 catkin_install_python(PROGRAMS
+  src/main.py
+  src/main_pickle.py
+  src/macstouch_config.py
+  src/task_maker.py
+  
   src/control/control.py
   src/control/main_test.py
   src/control/client_test.py
+  src/control/client.py
+  
+  src/vision/vision_node.py
+  
+  src/zero/pc_server.py
+  
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}  
 )

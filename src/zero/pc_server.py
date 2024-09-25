@@ -19,13 +19,16 @@ class Action:
     def __init__(self) -> None:
 
         # fixed pos
-        self.init_pos = (95, -280, 425, -120, 84, -28)
+        self.init_pos = [100, 0, 1070, -90, 0, 0]
 
         # offset
-        self.pnp_offset = (0, 0, 10, 0, 0, 0)
-        self.tool_offset_mount = (20, 0, 0, 0, 0, 0)
-        self.tool_offset_updown = (0, 0, 30, 0, 0, 0)
-        self.tool_offset_forwardbackward = (50, 0, 0, 0, 0, 0)
+        self.pnp_offset = [0, 0, 10, 0, 0, 0]
+        self.pnp_offset_back = [0, 0, -10, 0, 0, 0]
+        self.tool_offset_mount = [20, 0, 0, 0, 0, 0]
+        self.tool_offset_up = [0, 0, 30, 0, 0, 0]
+        self.tool_offset_down = [0, 0, -30, 0, 0, 0]
+        self.tool_offset_forward = [50, 0, 0, 0, 0, 0]
+        self.tool_offset_backward = [-50, 0, 0, 0, 0, 0]
 
         # mode 참고용
         # modes = ["MovePoint", "MoveOffset", "MoveGrip", "MoveSmooth", "Gripper",
@@ -55,26 +58,31 @@ class Action:
     def action_vision(self, index, target_position, grip_sep):
 
         # 1. ME(Material_end)
-        setdata = self.make_str("MovePoint", "end_effector", index)
+        setdata = self.make_str("MovePoint", "end_effector", str(index))
         send_data(setdata) 
+        rospy.sleep(3)
         # 2. 장착하는 방향
         setdata = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount))
         send_data(setdata) 
+        rospy.sleep(3)
         # 3. 위로
-        setdata = self.make_str("MoveOffset",  self.format_array(self.tool_offset_updown))
+        setdata = self.make_str("MoveOffset",  self.format_array(self.tool_offset_up))
         send_data(setdata) 
+        rospy.sleep(3)
         # 4. 뒤로
-        setdata = self.make_str("MoveOffset",  self.format_array(-self.tool_offset_forwardbackward))
+        setdata = self.make_str("MoveOffset",  self.format_array(self.tool_offset_backward))
         send_data(setdata) 
+        rospy.sleep(3)
         # 5. MV(Material_vision)
-        setdata = self.make_str("MovePoint", "vision", self.format_array(index))
+        setdata = self.make_str("MovePoint", "vision", str(index))
         send_data(setdata) 
 
     def action_pnp(self, index, material_coord):
         
         # 1. 뒤로
-        setdata = self.make_str("MoveOffset", self.format_array(-self.tool_offset_forwardbackward))
+        setdata = self.make_str("MoveOffset", self.format_array(self.tool_offset_backward))
         send_data(setdata)
+        rospy.sleep(3)
 
         # 2. pick (MM = 실제 물체 위치)
         #setdata = self.make_str("MoveGrip", self.format_array(material_coord), self.format_array(-self.pnp_offset), False)
@@ -83,19 +91,24 @@ class Action:
         # 2-1. 그리퍼
         setdata = self.make_str("Gripper", False)
         send_data(setdata) 
+        rospy.sleep(3)
         # 2-2. "재료 위치 + 오프셋"으로 이동
-        setdata = self.make_str("MovePoint", self.format_array(material_coord+self.pnp_offset))
+        setdata = self.make_str("MovePoint", self.format_array(list(material_coord)+self.pnp_offset))
         send_data(setdata)
+        rospy.sleep(3)
         # 2-3. 재료 위치로 이동 (오프셋만큼 이동)
-        setdata = self.make_str("MoveOffset", self.format_array(-self.pnp_offset))
+        setdata = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
         send_data(setdata)
+        rospy.sleep(3)
 
         # 3. gripper
         setdata = self.make_str("Gripper", True)
         send_data(setdata) 
+        rospy.sleep(3)
         # 4. 오프셋
         setdata = self.make_str("MoveOffset", self.format_array((self.pnp_offset)))
         send_data(setdata) 
+        rospy.sleep(3)
 
         # 5. place (MM = 실제 물체 위치 - offset)
         #setdata = self.make_str("MoveGrip", self.format_array(material_coord), self.format_array(self.pnp_offset), True)
@@ -104,9 +117,11 @@ class Action:
         # 5-1. "오프셋"으로 이동
         setdata = self.make_str("MoveOffset", self.format_array(self.pnp_offset))
         send_data(setdata)
+        rospy.sleep(3)
         # 5-2. 버거 위치로 이동
         setdata = self.make_str("MovePoint", "over_burger")
         send_data(setdata)
+        rospy.sleep(3)
         # 5-3. 그리퍼
         setdata = self.make_str("Gripper", False)
         send_data(setdata) 
@@ -117,16 +132,16 @@ class Action:
         setdata = self.make_str("MovePoint", "end_effector", index)
         send_data(setdata)
         # 2. 오프셋 위로
-        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_updown)))
+        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_up)))
         send_data(setdata)
         # 2. 오프셋 앞으로
-        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_forwardbackward)))
+        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_forward)))
         send_data(setdata)
         # 3. 오프셋 아래로
-        setdata = self.make_str("MoveOffset", self.format_array((-self.tool_offset_updown)))
+        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_down)))
         send_data(setdata)
         # 4. 오프셋 뒤로
-        setdata = self.make_str("MoveOffset", self.format_array((-self.tool_offset_forwardbackward)))
+        setdata = self.make_str("MoveOffset", self.format_array((self.tool_offset_backward)))
         send_data(setdata)
 
         
@@ -170,7 +185,7 @@ def action_req_callback(msg):
 # 소켓 서버 설정
 def setup_socket():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('192.168.1.23', 5000))
+    server_socket.bind(('192.168.1.35', 5000))
     print("1. 서버 소켓이 지정된 IP 주소와 포트에 바인딩 성공")
     server_socket.listen(5)
     print("2. 서버가 클라이언트의 연결을 대기 중")
@@ -216,11 +231,6 @@ def main():
                 break  # 연결이 종료되면 루프 종료
             data = data.decode()
             print(data)  # 수신된 데이터 출력
-
-            
-            # 소켓에서 데이터 송신하는 함수 호출
-            setdata = input("input data: ")
-            send_data(setdata)
 
             # 행동 완료 여부를 확인하는 함수 호출
             check_action_done(data, pub_action_done)

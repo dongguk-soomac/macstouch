@@ -54,7 +54,7 @@ def main():
 
 
     # initial pose definition
-    init_pos = Position(0, 0, 0, 0, 0, 0)
+    init_pos = Position(100, 0, 1070, -90, 0, 0)
 
     # 재료별 엔드이펙터
     end_effector = [
@@ -98,7 +98,6 @@ def main():
     rb.settool(id=7, offx=0, offy=0, offz=200, offrz=0, offry=0, offrx=0)
     rb.settool(id=8, offx=0, offy=0, offz=200, offrz=0, offry=0, offrx=0)
 
-
     # Set motion params
     param = [
 
@@ -107,12 +106,10 @@ def main():
 
     ]
 
-
     event = Event()
     th = threading.Thread(target=th_stop, args=(event,))  # def된 함수를 thread 생성
     th.setDaemon(True)  # main 함수와 같이 시작하고 끝나도록 daemon 함수로 설정 (병렬동작이 가능하도록 하는 기능)
     th.start()  # thread 동작
-
 
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #INET은 주소패밀리의 기본값, SOCK_STREAM은 소켓 유형의 기본값
@@ -142,9 +139,6 @@ def main():
                 # 1. MovePoint+init_pos
                 if Socket_data[1] == "init_pos":
                     rb.move(init_pos)
-                    rb.join()
-
-                    sock.send("Done")
 
                 # 2. MovePoint+end_effector+num
                 elif Socket_data[1] == "end_effector":
@@ -153,9 +147,6 @@ def main():
                 # 3. MovePoint+vision+num
                 elif Socket_data[1] == "vision":
                     rb.move(vision[int(Socket_data[2])])
-                    rb.join()
-
-                    sock.send("Done")
 
                 # 4. MovePoint+over_burger
                 elif Socket_data[1] == "over_burger":
@@ -166,6 +157,9 @@ def main():
                     pos = [int(i) for i in Socket_data[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
                     rb.move(Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]))
 
+                rb.join()
+
+                sock.send("Done")
 
             elif mode =="MoveOffset":
                 offset = [int(i) for i in Socket_data[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
@@ -173,19 +167,15 @@ def main():
 
                 rb.join()
 
-                # sock.send("Done")
-
+                sock.send("Done")
 
             elif mode =="MoveGrip":
 
-
                 sock.send("Done")
-
 
             elif mode =="MoveSmooth":
 
                 sock.send("Done")
-
 
             elif mode =="Gripper":
                 if Socket_data[1] == "True":
@@ -197,21 +187,18 @@ def main():
                 rb.sleep(1)
                 dout(48, '000')
 
-                # sock.send("Done")
-
+                sock.send("Done")
 
             elif mode =="ChangeTool":
                 id = int(Socket_data[1])+1
                 rb.changetool(tid=id)
 
-                # sock.send("Done")
-
+                sock.send("Done")
 
             elif mode =="ChangeParam":
                 rb.motionparam(param[int(Socket_data[1])])
 
-                # sock.send("Done")
-
+                sock.send("Done")
 
             elif mode =="ReadCoord":
                 position_list = shm_read( 0x3000, 6).split(',')
@@ -229,7 +216,6 @@ def main():
                 cur_pos = ','.join(str(p) for p in position_list)
                 sock.send(cur_pos)
 
-
             elif mode =="ReadJoint":
                 joint_list = shm_read( 0x3050, 6 ).split( ',' )
 
@@ -246,14 +232,11 @@ def main():
                 cur_jnt = ','.join(str(j) for j in joint_list)
                 sock.send(cur_jnt)
 
-
             elif mode =="ReadState":
 
                 sock.send("Done")
 
-
-            
-
+            rb.asyncm(2)
 
     except KeyboardInterrupt:           # "ctrl" + "c" 버튼 입력
         print("KeyboardInterrupt")
@@ -265,7 +248,6 @@ def main():
         print("finally")
         dout(48, '000')
 
-    rb.asyncm(2)
     event.set()
     rb.close()
         

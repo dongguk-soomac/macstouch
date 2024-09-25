@@ -88,22 +88,37 @@ class Control:
         elif self.mode == 'pnp':
             if self.action_state == 1:
                 print('##### [Mode : pnp] step_1 : pick action')
-                self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size)            
+                self.control_action_pub('pnp', self.material, self.grip_mode, self.coord, self.grip_size)            
                 self.action_state += 1
 
-            elif self.action_state == 2:  
-                print('##### [Mode : pnp] step_2 : place action') 
-                self.control_action_pub('place', self.material, None, self.place_coord, None)            
-                self.action_state += 1
-
-            elif self.action_state == 3:
-                print('##### [Mode : pnp] step_3 : done')
+            elif self.action_state == 2:
+                print('##### [Mode : pnp] step_2 : done')
                 msg = Bool()
                 msg.data = True
                 self.done.publish(msg)
                 self.action_state += 1  
             else:
-                pass                
+                pass  
+
+        # elif self.mode == 'pnp':
+        #     if self.action_state == 1:
+        #         print('##### [Mode : pnp] step_1 : pick action')
+        #         self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size)            
+        #         self.action_state += 1
+
+        #     elif self.action_state == 2:  
+        #         print('##### [Mode : pnp] step_2 : place action') 
+        #         self.control_action_pub('place', self.material, None, self.place_coord, None)            
+        #         self.action_state += 1
+
+        #     elif self.action_state == 3:
+        #         print('##### [Mode : pnp] step_3 : done')
+        #         msg = Bool()
+        #         msg.data = True
+        #         self.done.publish(msg)
+        #         self.action_state += 1  
+        #     else:
+        #         pass                
 
         elif self.mode == 'tool_return':
             if self.action_state == 1:
