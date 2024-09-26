@@ -4,11 +4,29 @@ import socket
 import time
 import rospy
 import numpy as np
+import json
+import os, sys
 
 # msg
 from std_msgs.msg import Float32MultiArray as fl
 from std_msgs.msg import Bool, Float32, String
 from macstouch.msg import action_info
+
+sys.path.append(os.path.dirname(__file__))
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
+from macstouch_config import *
+
+# json 파일 경로 설정
+current_dir = os.path.dirname(os.path.abspath(__file__))
+json_file_path = os.path.join(current_dir, 'coordinates.json')
+
+# json 파일 읽기
+with open(json_file_path, 'r', encoding='utf-8') as file:
+    coordinates_data = json.load(file)
+
+# MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cabage"]
+
 
 ## 1. Action ########################################################
 
@@ -157,13 +175,8 @@ class Ros():
             f"Target Position: {target_position}, Grip Sep: {grip_sep}")
         
 
-        MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
-        ToolCoordList = [[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0]
-                         [-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0],[-50, 0, 0, 0, 0, 0]]
-
-
-        current_tool = MaterialList[index]
-        current_tool_coord = ToolCoordList[index]
+        current_tool = MaterialList[index] # python list
+        current_tool_coord = coordinates_data['tool_coord'][index] # json
 
         print("current tool is", current_tool, "and coordinate is", current_tool_coord)
 
