@@ -182,16 +182,14 @@ def action_req_callback(msg):
 
 ## 2. Socket #####################################################
 
-# 소켓 서버 설정
+# 소켓 클라이언트 설정
 def setup_socket():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('192.168.1.35', 5000))
-    print("1. 서버 소켓이 지정된 IP 주소와 포트에 바인딩 성공")
-    server_socket.listen(5)
-    print("2. 서버가 클라이언트의 연결을 대기 중")
-    client_socket, addr = server_socket.accept()
-    print(f"3. 클라이언트 {addr} 연결 성공")
-    return server_socket, client_socket
+    global client_socket
+    client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    client_socket.connect(('192.168.1.23', 5000))
+    print("1. 클라이언트가 로봇 서버에 연결 성공")
+
+    return client_socket
 
 
 # 소켓 통신에서 행동 완료 신호를 처리하는 함수
@@ -217,7 +215,7 @@ def send_data(data):
 # 메인 함수
 def main():
     global client_socket, action
-    server_socket, client_socket = setup_socket()
+    client_socket = setup_socket()
     pub_action_done = setup_ros()
 
     # 액션 클래스 초기화
@@ -225,12 +223,20 @@ def main():
 
     while not rospy.is_shutdown():
         try:
+
+            message = input("서버로 보낼 메시지 입력: ")
+            if message.lower() == 'exit':
+                break
+            client_socket.sendall(message.encode('utf-8'))
+            
             # 소켓에서 데이터 수신
             data = client_socket.recv(65535)
             if not data:
                 break  # 연결이 종료되면 루프 종료
             data = data.decode()
             print(data)  # 수신된 데이터 출력
+            
+            
 
             # 행동 완료 여부를 확인하는 함수 호출
             check_action_done(data, pub_action_done)
@@ -241,7 +247,6 @@ def main():
 
     # 소켓 통신 종료
     client_socket.close()
-    server_socket.close()
 
 if __name__ == "__main__":
     main()

@@ -14,7 +14,7 @@ from threading import Event # event 모듈
 import os # 운영체제 모듈
 import time # 시간관련 모듈
 import math # 계산관련 모듈
-
+import socket
 
 MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
 
@@ -29,6 +29,10 @@ def th_stop(event):   # thread 함수
         time.sleep(0.1)
 
 def main():
+
+    
+
+
     ## 2. 초기 설정 ② ####################################
     # ZERO 로봇 생성자 
     rb = i611Robot()
@@ -112,10 +116,14 @@ def main():
     th.start()  # thread 동작
 
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #INET은 주소패밀리의 기본값, SOCK_STREAM은 소켓 유형의 기본값
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1) #(level, optname, value: int) 주어진 소켓 옵션의 값을 설정
-        sock.connect(('192.168.0.20',5000)) #address에 있는 원격 소켓에 연결
-        
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # socket() 소켓서버 생성
+        sock.bind(('192.168.1.23',5000)) #서버가 사용할 IP주소와 포트번호를 생성한 소켓에 결합
+        print("1")
+        sock.listen(1) #소켓 서버의 클라이언트의 접속을 기다린다.
+        print("2")
+        client_socket, addr = sock.accept() #요청 수신되면 요청을 받아들여 데이터 통신을 위한 소켓 생성
+        print("3")
 
         ## 3. 로봇 동작을 정의 ##############################
         # 작업 시작
@@ -129,6 +137,11 @@ def main():
             Socket_data = sock.recv(65535) # server socket으로부터 data 수신
             Socket_data = Socket_data.decode() # byte code -> 문자열 변환
             Socket_data = Socket_data.split('+')
+
+
+            setdata =input("input data")
+            setdata = setdata.encode() #문자열 -> byte code 변환 
+            client_socket.send(setdata) #client socket으로 data 송신
 
             mode = Socket_data[0]
 
@@ -250,7 +263,8 @@ def main():
 
     event.set()
     rb.close()
-        
+    sock.close() # 소켓통신 종료
+    client_socket.close()
 
 if __name__ == '__main__':
     main()
