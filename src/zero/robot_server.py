@@ -14,78 +14,28 @@ from threading import Event # event 모듈
 import os # 운영체제 모듈
 import time # 시간관련 모듈
 import math # 계산관련 모듈
+import socket
 
 
 MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
 
-def th_stop(event):   # thread 함수
-    while True:
-        if event.is_set():
-            return
-        if din(9) == '1': # din(9) = 1일 때 프로그램 종료
-            print("User Program Stop!")
-            pid = os.getpid()
-            os.kill(pid, signal.SIGTERM)    #os signal.SIGKILL
-        time.sleep(0.1)
 
 def main():
-    ## 2. 초기 설정 ② ####################################
-    # ZERO 로봇 생성자 
+
     rb = i611Robot()
-    # 좌표계의 정의
+
     _BASE = Base()
-    # 로봇과 연결 시작 초기화
+
     rb.open()
-    # I/O 입출력 기능의 초기화 
+
     IOinit( rb )
 
     # gripper pin reset
     dout(48, '000')
-    
-    # 교시 데이터 파일 읽기
-    data = Teachdata("teach_data")
-    ## 1. 교시 포인트 설정 ######################
-    p1 = Position( -418.30, -398.86, 287.00, 0, 0, -180 )
-    p2 = Position( -158.54, -395.10, 287.00, 0, 0, -180 )
-    ## 2. 동작 조건 설정 ######################## 
+
     m = MotionParam( jnt_speed=10, lin_speed=10, pose_speed=10, overlap = 30 )
-    #MotionParam 형으로 동작 조건 설정
+
     rb.motionparam( m )
-
-
-    # initial pose definition
-    init_pos = Position(0, 0, 0, 0, 0, 0)
-
-    # 재료별 엔드이펙터
-    end_effector = [
-
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-                    Position(0, 0, 0, 0, 0, 0),
-
-                ]
-
-    # 재료별 카메라
-    vision = [
-
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                Position(0, 0, 0, 0, 0, 0),
-                
-            ]
-
-    # 햄버거 위, place 위치
-    over_burger = Position(0, 0, 0, 0, 0, 0)
 
 
     # Set tool offset
@@ -108,28 +58,19 @@ def main():
     ]
 
 
-    event = Event()
-    th = threading.Thread(target=th_stop, args=(event,))  # def된 함수를 thread 생성
-    th.setDaemon(True)  # main 함수와 같이 시작하고 끝나도록 daemon 함수로 설정 (병렬동작이 가능하도록 하는 기능)
-    th.start()  # thread 동작
-
-
     try:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM) #INET은 주소패밀리의 기본값, SOCK_STREAM은 소켓 유형의 기본값
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 1) #(level, optname, value: int) 주어진 소켓 옵션의 값을 설정
-        sock.connect(('192.168.0.20',5000)) #address에 있는 원격 소켓에 연결
-        
 
-        ## 3. 로봇 동작을 정의 ##############################
-        # 작업 시작
-        Socket_data = 'start' #data 인스턴스 생성
-        Socket_data = Socket_data.encode() # 유니코드를 utf-8, euc-kr, ascii 형식의 byte코드로 변환
-        sock.send(Socket_data) #data 전송 
+        server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # 소켓 생성
+        server_socket.bind(('192.168.1.23', 5000))  # 소켓에 IP 주소와 포트 번호 결합
+        print("Server is running...")
+        server_socket.listen(5)  # 클라이언트의 접속을 대기
+        client_socket, addr = server_socket.accept()  # 요청 수신
+        print("Connection from", addr)
 
 
         while True:
                 
-            Socket_data = sock.recv(65535) # server socket으로부터 data 수신
+            Socket_data = client_socket.recv(65535) # server socket으로부터 data 수신
             Socket_data = Socket_data.decode() # byte code -> 문자열 변환
             Motions = Socket_data.split('=')
             
@@ -151,28 +92,29 @@ def main():
 
 
                 elif mode =="MovePick":
-                    pos = [float(i) for i in motion[1].split(',')]
-                    offset = [float(i) for i in motion[2].split(',')]
+                    # pos = [float(i) for i in motion[1].split(',')]
+                    # offset = [float(i) for i in motion[2].split(',')]
 
-                    p1 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
-                    p2 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
+                    # p1 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
+                    # p2 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
 
-                    m_overlap = MotionParam(jnt_speed=10, lin_speed=10, pose_speed=20, overlap = 60)
+                    # m_overlap = MotionParam(jnt_speed=10, lin_speed=10, pose_speed=20, overlap = 60)
 
-                    rb.move(p1, p2, m_overlap)
+                    # rb.move(p1, p2, m_overlap)
 
-                    rb.set_MDO()
+                    # rb.set_MDO()
+
+                    client_socket.send("Done")
 
 
                 elif mode =="MovePlace":
 
-
-                    sock.send("Done")
+                    client_socket.send("Done")
 
 
                 elif mode =="MoveSmooth":
 
-                    sock.send("Done")
+                    client_socket.send("Done")
 
 
                 elif mode =="Gripper":
@@ -192,13 +134,9 @@ def main():
                     id = int(motion[1])+1
                     rb.changetool(tid=id)
 
-                    # sock.send("Done")
-
 
                 elif mode =="ChangeParam":
                     rb.motionparam(param[int(motion[1])])
-
-                    # sock.send("Done")
 
 
                 elif mode =="ReadCoord":
@@ -215,7 +153,7 @@ def main():
                         position_list[0], position_list[1], position_list[2], position_list[3], position_list[4], position_list[5]))
                     
                     cur_pos = ','.join(str(p) for p in position_list)
-                    sock.send(cur_pos)
+                    client_socket.send(cur_pos)
 
 
                 elif mode =="ReadJoint":
@@ -232,14 +170,14 @@ def main():
                         joint_list[0], joint_list[1], joint_list[2], joint_list[3], joint_list[4], joint_list[5]))
                     
                     cur_jnt = ','.join(str(j) for j in joint_list)
-                    sock.send(cur_jnt)
+                    client_socket.send(cur_jnt)
 
 
                 elif mode =="ReadState":
                     pass
 
 
-            sock.send('done')
+            client_socket.send('done')
 
             
 
@@ -255,8 +193,10 @@ def main():
         dout(48, '000')
 
     rb.asyncm(2)
-    event.set()
     rb.close()
+
+    client_socket.close()
+    server_socket.close()
         
 
 if __name__ == '__main__':
