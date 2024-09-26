@@ -131,126 +131,115 @@ def main():
                 
             Socket_data = sock.recv(65535) # server socket으로부터 data 수신
             Socket_data = Socket_data.decode() # byte code -> 문자열 변환
-            Socket_data = Socket_data.split('+')
+            Motions = Socket_data.split('=')
+            
+            for Motion in Motions:
+                motion = Motion.split('+')
 
-            mode = Socket_data[0]
+                mode = motion[0]
 
-            rb.asyncm(1)
+                rb.asyncm(1)
 
-            if mode =="MovePoint":
-                
-                # 1. MovePoint+init_pos
-                if Socket_data[1] == "init_pos":
-                    rb.move(init_pos)
-                    rb.join()
-
-                    sock.send("Done")
-
-                # 2. MovePoint+end_effector+num
-                elif Socket_data[1] == "end_effector":
-                    rb.move(end_effector[int(Socket_data[2])])
-
-                # 3. MovePoint+vision+num
-                elif Socket_data[1] == "vision":
-                    rb.move(vision[int(Socket_data[2])])
-                    rb.join()
-
-                    sock.send("Done")
-
-                # 4. MovePoint+over_burger
-                elif Socket_data[1] == "over_burger":
-                    rb.move(over_burger)
-
-                # 5. MovePoint+x,y,z,rx,ry,rz
-                else:
-                    pos = [int(i) for i in Socket_data[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
+                if mode =="MovePoint":
+                    pos = [float(i) for i in motion[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
                     rb.move(Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5]))
 
 
-            elif mode =="MoveOffset":
-                offset = [int(i) for i in Socket_data[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
-                rb.relline(dx=offset[0], dy=offset[1], dz=offset[2], drx=offset[3], dry=offset[4], drz=offset[5])
-
-                rb.join()
-
-                # sock.send("Done")
+                elif mode =="MoveOffset":
+                    offset = [float(i) for i in motion[1].split(',')]  # 좌표로 명령 시 반드시 6개 정수
+                    rb.relline(dx=offset[0], dy=offset[1], dz=offset[2], drx=offset[3], dry=offset[4], drz=offset[5])
 
 
-            elif mode =="MoveGrip":
+                elif mode =="MovePick":
+                    pos = [float(i) for i in motion[1].split(',')]
+                    offset = [float(i) for i in motion[2].split(',')]
+
+                    p1 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
+                    p2 = Position(pos[0], pos[1], pos[2], pos[3], pos[4], pos[5], pos[6])
+
+                    m_overlap = MotionParam(jnt_speed=10, lin_speed=10, pose_speed=20, overlap = 60)
+
+                    rb.move(p1, p2, m_overlap)
+
+                    rb.set_MDO()
 
 
-                sock.send("Done")
+                elif mode =="MovePlace":
 
 
-            elif mode =="MoveSmooth":
-
-                sock.send("Done")
+                    sock.send("Done")
 
 
-            elif mode =="Gripper":
-                if Socket_data[1] == "True":
-                    dout(48, '1**') # 그리퍼 열기
+                elif mode =="MoveSmooth":
 
-                elif Socket_data[1] == "False":
-                    dout(48, '**1') # 그리퍼 닫기
-
-                rb.sleep(1)
-                dout(48, '000')
-
-                # sock.send("Done")
+                    sock.send("Done")
 
 
-            elif mode =="ChangeTool":
-                id = int(Socket_data[1])+1
-                rb.changetool(tid=id)
+                elif mode =="Gripper":
+                    if motion[1] == "True":
+                        dout(48, '1**') # 그리퍼 열기
 
-                # sock.send("Done")
+                    elif motion[1] == "False":
+                        dout(48, '**1') # 그리퍼 닫기
 
+                    rb.sleep(1)
+                    dout(48, '000')
 
-            elif mode =="ChangeParam":
-                rb.motionparam(param[int(Socket_data[1])])
-
-                # sock.send("Done")
-
-
-            elif mode =="ReadCoord":
-                position_list = shm_read( 0x3000, 6).split(',')
-
-                position_list[0] = round(float(position_list[0])*1000,3) # XY 좌표계 X 위치
-                position_list[1] = round(float(position_list[1])*1000,3) # XY 좌표계 Y 위치
-                position_list[2] = round(float(position_list[2])*1000,3) # XY 좌표계 Z 위치
-                position_list[3] = round(math.degrees(float(position_list[3])),3) # XY 좌표계 Rz 위치
-                position_list[4] = round(math.degrees(float(position_list[4])),3) # XY 좌표계 Ry 위치
-                position_list[5] = round(math.degrees(float(position_list[5])),3) # XY 좌표계 Rx 위치
-
-                print("x={0}, y={1}, z={2}, rz={3}, ry={4}, rx={5}".format(\
-                    position_list[0], position_list[1], position_list[2], position_list[3], position_list[4], position_list[5]))
-                
-                cur_pos = ','.join(str(p) for p in position_list)
-                sock.send(cur_pos)
+                    # sock.send("Done")
 
 
-            elif mode =="ReadJoint":
-                joint_list = shm_read( 0x3050, 6 ).split( ',' )
+                elif mode =="ChangeTool":
+                    id = int(motion[1])+1
+                    rb.changetool(tid=id)
 
-                joint_list[0] = round(math.degrees(float(joint_list[0])),3) # Joint 좌표계 J1 위치
-                joint_list[1] = round(math.degrees(float(joint_list[1])),3) # Joint 좌표계 J2 위치
-                joint_list[2] = round(math.degrees(float(joint_list[2])),3) # Joint 좌표계 J3 위치
-                joint_list[3] = round(math.degrees(float(joint_list[3])),3) # Joint 좌표계 J4 위치
-                joint_list[4] = round(math.degrees(float(joint_list[4])),3) # Joint 좌표계 J5 위치
-                joint_list[5] = round(math.degrees(float(joint_list[5])),3) # Joint 좌표계 J6 위치
-
-                print("j1={0}, j2={1}, j3={2}, j4={3}, j5={4}, j6={5}".format(\
-                    joint_list[0], joint_list[1], joint_list[2], joint_list[3], joint_list[4], joint_list[5]))
-                
-                cur_jnt = ','.join(str(j) for j in joint_list)
-                sock.send(cur_jnt)
+                    # sock.send("Done")
 
 
-            elif mode =="ReadState":
+                elif mode =="ChangeParam":
+                    rb.motionparam(param[int(motion[1])])
 
-                sock.send("Done")
+                    # sock.send("Done")
 
+
+                elif mode =="ReadCoord":
+                    position_list = shm_read( 0x3000, 6).split(',')
+
+                    position_list[0] = round(float(position_list[0])*1000,3) # XY 좌표계 X 위치
+                    position_list[1] = round(float(position_list[1])*1000,3) # XY 좌표계 Y 위치
+                    position_list[2] = round(float(position_list[2])*1000,3) # XY 좌표계 Z 위치
+                    position_list[3] = round(math.degrees(float(position_list[3])),3) # XY 좌표계 Rz 위치
+                    position_list[4] = round(math.degrees(float(position_list[4])),3) # XY 좌표계 Ry 위치
+                    position_list[5] = round(math.degrees(float(position_list[5])),3) # XY 좌표계 Rx 위치
+
+                    print("x={0}, y={1}, z={2}, rz={3}, ry={4}, rx={5}".format(\
+                        position_list[0], position_list[1], position_list[2], position_list[3], position_list[4], position_list[5]))
+                    
+                    cur_pos = ','.join(str(p) for p in position_list)
+                    sock.send(cur_pos)
+
+
+                elif mode =="ReadJoint":
+                    joint_list = shm_read( 0x3050, 6 ).split( ',' )
+
+                    joint_list[0] = round(math.degrees(float(joint_list[0])),3) # Joint 좌표계 J1 위치
+                    joint_list[1] = round(math.degrees(float(joint_list[1])),3) # Joint 좌표계 J2 위치
+                    joint_list[2] = round(math.degrees(float(joint_list[2])),3) # Joint 좌표계 J3 위치
+                    joint_list[3] = round(math.degrees(float(joint_list[3])),3) # Joint 좌표계 J4 위치
+                    joint_list[4] = round(math.degrees(float(joint_list[4])),3) # Joint 좌표계 J5 위치
+                    joint_list[5] = round(math.degrees(float(joint_list[5])),3) # Joint 좌표계 J6 위치
+
+                    print("j1={0}, j2={1}, j3={2}, j4={3}, j5={4}, j6={5}".format(\
+                        joint_list[0], joint_list[1], joint_list[2], joint_list[3], joint_list[4], joint_list[5]))
+                    
+                    cur_jnt = ','.join(str(j) for j in joint_list)
+                    sock.send(cur_jnt)
+
+
+                elif mode =="ReadState":
+                    pass
+
+
+            sock.send('done')
 
             
 
