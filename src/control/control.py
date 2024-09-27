@@ -28,7 +28,7 @@ class Control:
         global coordinates_data
         self.init_pos = coordinates_data["init_pos"]
         self.place_coord = coordinates_data["place_coord"]
-        self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
+        self.tool_coord = coordinates_data["vision_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
         self.tool_grip = coordinates_data["tool_grip"] # 장비 장착을 위한 그리퍼 제어 길이, 필요에 따라 재료마다 값 저장하는 방식으로도 변경 가능
 
         # ros setting
@@ -103,7 +103,7 @@ class Control:
                 self.done.publish(msg)
                 self.action_state += 1  
             else:
-                pass                
+                pass       
 
         elif self.mode == 'tool_return':
             if self.action_state == 1:
@@ -121,6 +121,7 @@ class Control:
                 pass          
     
     def action_done_cb(self, data):
+        print("recived /action_done from pc_client")
         self.action()
         
     def control_action_pub(self, action, material, grip_mode, coord, grip_size):
@@ -141,6 +142,8 @@ class Control:
         action_msg.grip_mode = grip_mode
         action_msg.coord = coord
         action_msg.grip_size = grip_size
+
+        print(coord)
         
         self.action_req.publish(action_msg)
 
