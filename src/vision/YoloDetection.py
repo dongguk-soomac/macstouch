@@ -13,7 +13,7 @@ CLASSES = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cab
 colors = np.random.uniform(0, 255, size=(len(CLASSES), 3)) # RGB
 resolution_width, resolution_height = (640, 480)
 
-model = YOLO('./pt/best.pt')
+model = YOLO('./pt/tomatopicklemeat.pt')
 
 # cap = cv2.VideoCapture(2)
 
@@ -57,7 +57,7 @@ while True:
         boxes = result.boxes
         for box in boxes:
             confidence = box.conf
-            if confidence > 0.8:
+            if confidence > 0.7:
                 xyxy = box.xyxy.tolist()[0]
                 bboxes.append(xyxy)
                 confidences.append(float(confidence))
@@ -92,7 +92,7 @@ while True:
             wx = round(wx, 3)
             wy = round(wy, 3)
             wz = round(wz, 3)
-            cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
+            cv2.putText(annotated_frame, "{}, {}, {}".format(label, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
 
         cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
 
