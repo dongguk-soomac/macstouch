@@ -101,7 +101,8 @@ class Action:
         setdata4 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_forward))
         # 5. change tool
         setdata5 = self.make_str("ToolNum",  self.format_array([tool_index]))
-
+        print(tool_index)
+        
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5])
         socke.send_data(setdata)
 
@@ -117,7 +118,7 @@ class Action:
         # 2-1. 그리퍼
         setdata2 = self.make_str("Gripper", True)
         # 2-2. "재료 위치 + 오프셋"으로 이동
-        setdata3 = self.make_str("MovePoint", self.format_array(list(material_coord) + self.pnp_offset))
+        setdata3 = self.make_str("MovePoint", self.format_array([list(material_coord)[i] + self.pnp_offset[i] for i in range(len(self.pnp_offset))]))
         # 2-3. 재료 위치로 이동 (오프셋만큼 이동)
         setdata4 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
         # 3. gripper
@@ -135,7 +136,7 @@ class Action:
         # setdata1 = self.make_str("MoveGrip", "place", self.format_array(material_coord), self.format_array(self.pnp_offset), True)
         ## 1번 임시동작
         # 1-1. "오프셋"으로 이동
-        setdata1 = self.make_str("MovePoint", self.format_array(list(place_coord) + self.pnp_offset)) 
+        setdata1 = self.make_str("MovePoint", self.format_array([list(place_coord)[i] + self.pnp_offset[i] for i in range(len(self.pnp_offset))]))
         # 1-2. 버거 위치로 이동
         setdata2 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
         # setdata2 = self.make_str("MovePoint", "over_burger") # 버거 위치# control로 부터 받은 place 위치

@@ -2,7 +2,7 @@
 # -- coding: utf-8 --
 
 import rospy
-from std_msgs.msg import String, Bool
+from std_msgs.msg import String, Bool, Int16
 from macstouch.msg import order, state, vision_info, control_info, error, material
 
 import os, sys
@@ -12,8 +12,12 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import numpy as np
 
-from macstouch_config import MaterialList, WeightLimit, ModeList
-from task_maker import Task
+# from macstouch_config import MaterialList, WeightLimit, ModeList
+# from task_maker import Task
+
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
+WeightLimit = [10, 10, 10, 10, 10, 10, 10, 10]
+ModeList = ["init_pos", "tool_get", "vision", "pnp", "tool_return"]
 
 
 OrderList = []
@@ -109,12 +113,12 @@ class Control:
 
 class Request:
     def __init__(self):
-        self.vision_pub = rospy.Publisher('/vision_req', String)
+        self.vision_pub = rospy.Publisher('/vision_req', Int16, queue_size=1, latch=True)
         self.control_pub = rospy.Publisher('/control_req', control_info)
         self.workspace_pub = rospy.Publisher('/workspace', String)
 
     def vision_req(self, material):
-        self.vision_pub.publish(MaterialList[material])
+        self.vision_pub.publish(material)
 
     def control_req(self, mode, material=None, grip_mode=None, coord=None, size=None):
         request = control_info()
@@ -126,23 +130,30 @@ class Request:
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 30
 
-        elif mode == 1: # vision
+        elif mode == 1: # tool_return
             request.mode = ModeList[mode]
-            request.material = MaterialList[material]
+            request.material = material
             request.grip_mode = 'x'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 0
 
-        elif mode == 2: # pnp
+        elif mode == 2: # vision
             request.mode = ModeList[mode]
-            request.material = MaterialList[material]
-            request.grip_mode = grip_mode
+            request.material = material
+            request.grip_mode = 'x'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 0
+
+        elif mode == 3: # pnp
+            request.mode = ModeList[mode]
+            request.material = material
+            request.grip_mode = "grip_mode"
             request.coord = coord
             request.grip_size = 30
 
-        elif mode == 3: # tool_return
+        elif mode == 4: # tool_return
             request.mode = ModeList[mode]
-            request.material = MaterialList[material]
+            request.material = material
             request.grip_mode = 'x'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 0
@@ -167,42 +178,68 @@ def main():
     vision = Vision()
     control = Control()
 
-    task = Task()
+    # task = Task()
     step = 0
     status = None
 
     mode = 2
-    material = 6
+    material = 3
 
     while not rospy.is_shutdown():
         pickle = input("Press 'y' to start pickle test:     ")
 
         if pickle == 'y':
 
-            # control: vision - pickle
+            # print("step 1: init_pos")
+
+            # # control: init_pos
+            # req.control_req(mode=0)
+            # while control.control_done == False:
+            #     rospy.sleep(0.2)
+
+            print("step 2: tool_get")
+            # control: tool_get
+            control.control_done = False
             req.control_req(mode=1, material=material)
             while control.control_done == False:
                 rospy.sleep(0.2)
 
+            print("step 3: control vision")
+            # control: vision - pickle
+            control.control_done = False
+            req.control_req(mode=2, material=material)
+            while control.control_done == False:
+                rospy.sleep(0.2)
+
+            print("step 4: vision")
             # vision: pickle
             control.control_done = False
             req.vision_req(material=material)
             while vision.coords[material]['ready'] == False:
                 rospy.sleep(0.2)
 
+            print("step 5: control pnp")
             # control: pnp - pickle
             vision.coords[material]['ready'] = False
-            req.control_req(mode=2, material=material,
+            req.control_req(mode=3, material=material,
                             grip_mode=vision.coords[material]['grip_mode'],
                             coord=vision.coords[material]['coord'],
                             size=vision.coords[material]['size'])
             while control.control_done == False:
                 rospy.sleep(0.2)
 
-            # control: init_pos
-            req.control_req(mode=0)
+            print("step 6: tool_return")
+            # control: tool_return
+            control.control_done = False
+            req.control_req(mode=4, material=material)
             while control.control_done == False:
                 rospy.sleep(0.2)
+
+            # print("step 7: init_pos")
+            # # control: init_pos
+            # req.control_req(mode=0)
+            # while control.control_done == False:
+            #     rospy.sleep(0.2)
     
 
 if __name__ == "__main__":

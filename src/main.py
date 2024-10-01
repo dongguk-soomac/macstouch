@@ -139,7 +139,7 @@ def main():
     step = 0
     status = None
 
-    while rospy.is_shutdown():
+    while not rospy.is_shutdown():
         if IngId is None and len(OrderList) != 0:
             IngId = OrderList[0].id
             TaskList = Task.order_to_task()
