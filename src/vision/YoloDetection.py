@@ -20,14 +20,17 @@ model = YOLO('./pt/best.pt')
 # if not cap.isOpened():
 #     print("cannot open the device")
 #     exit()
-rs = DepthCamera(resolution_width, resolution_height)
-depth_scale = rs.get_depth_scale()
+# rs = DepthCamera(resolution_width, resolution_height)
+# depth_scale = rs.get_depth_scale()
 
 
 while True:
-    ret, depth_raw_frame, color_raw_frame = rs.get_raw_frame()
-    color_frame = np.asanyarray(color_raw_frame.get_data())
-    depth_frame = np.asanyarray(depth_raw_frame.get_data())
+#     ret, depth_raw_frame, color_raw_frame = rs.get_raw_frame()
+#     color_frame = np.asanyarray(color_raw_frame.get_data())
+#     depth_frame = np.asanyarray(depth_raw_frame.get_data())
+
+    color_frame = cv2.imread("/home/choiyj/Downloads/rviz_dataset/tomato/color_0636.png")
+    depth_frame = cv2.imread("/home/choiyj/Downloads/rviz_dataset/tomato/depth_0636.png", cv2.IMREAD_ANYDEPTH)
 
     # frame = cv2.imread("./data/image.png")
     # ret, frame = cap.read()
@@ -38,7 +41,7 @@ while True:
     results = model(color_frame)
 
     annotated_frame = color_frame.copy()
-    depth_info = depth_raw_frame.as_depth_frame()
+    # depth_info = depth_raw_frame.as_depth_frame()
 
     # for result in results[0].boxes:
     #     if result.conf >= 0.7: 
@@ -57,7 +60,7 @@ while True:
         boxes = result.boxes
         for box in boxes:
             confidence = box.conf
-            if confidence > 0.8:
+            if confidence > 0.0:
                 xyxy = box.xyxy.tolist()[0]
                 bboxes.append(xyxy)
                 confidences.append(float(confidence))
@@ -86,13 +89,13 @@ while True:
 
         if i == center_idx:
             color = [0, 255, 0]
-            depth = round((depth_info.get_distance(center_xy[0], center_xy[1]) * 100), 2)
-            wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(rs.depth_intrinsics, [cx, cy], depth)
+            # depth = round((depth_info.get_distance(center_xy[0], center_xy[1]) * 100), 2)
+            # wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(rs.depth_intrinsics, [cx, cy], depth)
             
-            wx = round(wx, 3)
-            wy = round(wy, 3)
-            wz = round(wz, 3)
-            cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
+            # wx = round(wx, 3)
+            # wy = round(wy, 3)
+            # wz = round(wz, 3)
+            # cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
 
         cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
 
