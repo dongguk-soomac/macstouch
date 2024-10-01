@@ -172,7 +172,7 @@ def main():
     status = None
 
     mode = 2
-    material = 3
+    material = 6
 
     while not rospy.is_shutdown():
         pickle = input("Press 'y' to start pickle test:     ")
