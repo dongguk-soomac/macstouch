@@ -29,7 +29,8 @@ class Control:
         self.init_pos = coordinates_data["init_pos"]
         self.place_coord = coordinates_data["place_coord"]
         self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
-        self.tool_grip = coordinates_data["tool_grip"] # 장비 장착을 위한 그리퍼 제어 길이, 필요에 따라 재료마다 값 저장하는 방식으로도 변경 가능
+        self.vision_coord = coordinates_data["vision_coord"]
+        # [635, 100, 400, -90, 0, -90]
 
         # ros setting
         rospy.Subscriber('/control_req', control_info, self.control_cb)
