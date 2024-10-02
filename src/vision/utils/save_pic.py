@@ -15,7 +15,7 @@ if not os.path.exists(folder_name):
     os.makedirs(folder_name)
 
 # 리얼센스 카메라 초기화
-rs = DepthCamera(1280, 960)
+rs = DepthCamera(848, 480)
 
 frame_count = 0
 
@@ -24,8 +24,9 @@ try:
         ret, depth_raw_frame, color_raw_frame = rs.get_raw_frame()
         color_frame = np.asanyarray(color_raw_frame.get_data())
         depth_frame = np.asanyarray(depth_raw_frame.get_data())
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET)
 
-        cv2.imshow('RealSense Camera', color_frame)
+        cv2.imshow('RealSense Camera', depth_colormap)
 
         key = cv2.waitKey(1)
         if key == ord(' '):  # 스페이스바를 누르면 이미지 저장

@@ -2,18 +2,25 @@ import pyrealsense2 as rs
 import numpy as np
 
 class DepthCamera:
-    def __init__(self, resolution_width, resolution_height):
+    def __init__(self, resolution_width, resolution_height, clipping_distance_in_meters=1):
         # Configure depth and color streams
         self.pipeline = rs.pipeline()
         config = rs.config()
         #print(img_width, img_height)
+
         # Get device product line for setting a supporting resolution
         pipeline_wrapper = rs.pipeline_wrapper(self.pipeline)
         pipeline_profile = config.resolve(pipeline_wrapper)
         device = pipeline_profile.get_device()
         depth_sensor = device.first_depth_sensor()
+
+        # depth_sensor.set_option(rs.option.depth_units, 0.0001)
+
         # Get depth scale of the device
         self.depth_scale =  depth_sensor.get_depth_scale()
+
+        self.clipping_distance = clipping_distance_in_meters / self.depth_scale
+
         # Create an align object
         align_to = rs.stream.color
 
@@ -29,6 +36,11 @@ class DepthCamera:
         profile = self.pipeline.get_active_profile()
         depth_profile = rs.video_stream_profile(profile.get_stream(rs.stream.depth))
         self.depth_intrinsics = depth_profile.get_intrinsics()
+
+        self.spat_filter = rs.spatial_filter(1, 1, 5, 0)          # Spatial    - edge-preserving spatial smoothing
+        self.temp_filter = rs.temporal_filter(1.0, 100.0, 3)    # Temporal   - reduces temporal noise
+        self.hole_filling = rs.hole_filling_filter(0)
+
         # print(self.get_camera_intrinsics)
         # print(self.depth_intrinsics)
        
@@ -39,12 +51,18 @@ class DepthCamera:
         frames = self.pipeline.wait_for_frames()
         aligned_frames = self.align.process(frames)
         depth_frame = aligned_frames.get_depth_frame()
+
         color_frame = aligned_frames.get_color_frame()
 
-        depth_image = np.asanyarray(depth_frame.get_data())
-        color_image = np.asanyarray(color_frame.get_data())
         if not depth_frame or not color_frame:
             return False, None, None
+
+        filtered = self.spat_filter.process(depth_frame)
+        filtered = self.temp_filter.process(filtered)
+        filtered = self.hole_filling.process(filtered)
+
+        depth_image = np.asanyarray(filtered.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
         return True, depth_image, color_image
 
     def get_raw_frame(self):
@@ -52,9 +70,15 @@ class DepthCamera:
         aligned_frames = self.align.process(frames)
         depth_frame = aligned_frames.get_depth_frame()
         color_frame = aligned_frames.get_color_frame()
+
         if not depth_frame or not color_frame:
             return False, None, None
-        return True, depth_frame, color_frame
+
+        filtered = self.spat_filter.process(depth_frame)
+        filtered = self.temp_filter.process(filtered)
+        filtered = self.hole_filling.process(filtered)
+        
+        return True, filtered, color_frame
     
     def get_depth_scale(self):
         """
