@@ -7,6 +7,8 @@ import time
 import json
 import os, sys
 
+from copy import deepcopy
+
 # msg
 from std_msgs.msg import Float32MultiArray as fl
 from std_msgs.msg import Bool, Float32, String
@@ -22,6 +24,41 @@ with open(json_file_path, 'r', encoding='utf-8') as file:
     coordinates_data = json.load(file)
 
 # MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cabage"]
+def transformation_camera(vision_coord, materail_coord):
+    pick_coord = deepcopy(vision_coord)
+    camera_thick = 25.2
+    camera_z_offset = camera_thick + 50 
+    tool = 218 # material index마다 값 설정 필요
+
+    if vision_coord[0] > 0: # 좌측 재료
+        camera_x_offset = tool + 6.18
+    else: # 우측 재료
+        camera_x_offset = tool - 6.18
+    
+    for i in range(6):
+        materail_coord[i] = materail_coord[i]*10
+
+    #x
+    if vision_coord[0] > 0: # 좌측 재료
+        pick_coord[0] = vision_coord[0] - camera_x_offset - materail_coord[1]
+    else: # 우측 재료
+        pick_coord[0] = vision_coord[0] + camera_x_offset + materail_coord[1]
+
+
+
+    # y
+    pick_coord[1] = vision_coord[1] - materail_coord[0] + 25
+    # z
+    pick_coord[2] = np.max((vision_coord[2] - camera_z_offset - materail_coord[2] - 12, 3))
+    #rz
+    pick_coord[3] = -90 
+    #ry
+    pick_coord[4] = 0
+    #rx
+    pick_coord[5] = -180
+
+    return pick_coord
+
 class Control:
     def __init__(self) -> None:
         # json 파일의 고정 좌표값 저장
@@ -29,7 +66,8 @@ class Control:
         self.init_pos = coordinates_data["init_pos"]
         self.place_coord = coordinates_data["place_coord"]
         self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
-        self.tool_grip = coordinates_data["tool_grip"] # 장비 장착을 위한 그리퍼 제어 길이, 필요에 따라 재료마다 값 저장하는 방식으로도 변경 가능
+        self.vision_coord = coordinates_data["vision_coord"]
+        # [635, 100, 400, -90, 0, -90]
 
         # ros setting
         rospy.Subscriber('/control_req', control_info, self.control_cb)
@@ -87,16 +125,17 @@ class Control:
 
         elif self.mode == 'pnp':
             if self.action_state == 1:
+                pick_coord = transformation_camera(self.vision_coord[self.material], list(self.coord))
                 print('##### [Mode : pnp] step_1 : pick action')
-                self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
+                self.control_action_pub('pick', None, self.grip_mode, pick_coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
 
-            elif self.action_state == 2:  
-                print('##### [Mode : pnp] step_2 : place action') 
-                self.control_action_pub('place', self.material, None, self.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                self.action_state += 1
+            # elif self.action_state == 2:  
+            #     print('##### [Mode : pnp] step_2 : place action') 
+            #     self.control_action_pub('place', self.material, None, self.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+            #     self.action_state += 1
 
-            elif self.action_state == 3:
+            elif self.action_state == 2:
                 print('##### [Mode : pnp] step_3 : done')
                 msg = Bool()
                 msg.data = True
@@ -123,7 +162,7 @@ class Control:
         elif self.mode == 'tool_get':
             if self.action_state == 1:
                 print('##### [Mode : tool_get] step_1 : tool_get')
-                self.control_action_pub('tool_get', None, None, self.tool_coord[self.material], None)            
+                self.control_action_pub('tool_get', self.material, None, self.tool_coord[self.material], None)            
                 self.action_state += 1
 
             elif self.action_state == 2:
@@ -167,3 +206,7 @@ if __name__ == '__main__':
 
     except rospy.ROSInterruptException:
         rospy.loginfo('Program is shut down')
+
+
+
+# "init_pos" : [98.26, 39.8, 1069.9, -87.3, -2.18, 0],

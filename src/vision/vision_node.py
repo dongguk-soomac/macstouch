@@ -21,10 +21,10 @@ from realsense.realsense_camera import DepthCamera
 
 MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
 VisionClass = ["meat", "pickle", "tomato"]
-resolution_width, resolution_height = (848, 480)
+resolution_width, resolution_height = (1280,720)
 
-model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
-# model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
+# model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
+model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
 
 class Vision:
     def __init__(self) -> None:
@@ -39,7 +39,7 @@ class Vision:
         self.depth_scale = self.rs.get_depth_scale()
 
         self.coord_limit = {"meat": [[-20, 20],[-20, 20], [50, 60]],
-                            "pickle": [[-20, 20],[-20, 20], [50, 60]], 
+                            "pickle": [[-20, 20],[-20, 20], [25, 35]], 
                             "tomato": [[-20, 20],[-20, 20], [50, 60]]}
         self.coord = {"meat": None, "pickle": None, "tomato": None}
 
@@ -87,16 +87,19 @@ class Vision:
 
         _bbox = None
         label = None
+        color = [0, 255, 0]
 
         for result in results:
             boxes = result.boxes
             for box in boxes:
                 confidence = box.conf
-                if confidence > 0.8:
+                if confidence > 0.0:
                     xyxy = box.xyxy.tolist()[0]
                     cx = int((xyxy[2]+xyxy[0])//2)
                     cy = int((xyxy[3]+xyxy[1])//2)
                     dis = (cx-resolution_width/2)**2+(cy-resolution_height/2)**2
+                    x, y, x2, y2 = list(map(int, xyxy)) 
+                    cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
                     if dis < min_dis:
                         min_dis = dis
                         center_xy = [cx, cy]
@@ -111,18 +114,22 @@ class Vision:
         x, y, x2, y2 = bbox
 
         depth = round((depth_frame.get_distance(center_xy[0], center_xy[1]) * 100), 2)
+        print(self.rs.depth_intrinsics)
         wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(self.rs.depth_intrinsics, [center_xy[0], center_xy[1]], depth)
-        wx = round(wx, 3)
-        wy = round(wy, 3)
+        wx = round(wx*(848/1280), 3)
+        wy = round(wy*(480/720), 3)
         wz = round(wz, 3)
+
+        cv2.putText(annotated_frame, "{}, {}".format(center_xy[0], center_xy[1]), (x, y), 0, 1.0, color, 2)
         
         cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
-
+        cv2.line(annotated_frame, (640, 0), (640, 720), (0, 0, 255), 2)
+        cv2.line(annotated_frame, (0, 360), (1280, 360), (0, 0, 255), 2)
         cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
         print(wx, wy, wz)
 
-        resized_frame = cv2.resize(annotated_frame, (848, 480))
-        self.color_frame = resized_frame
+        # resized_frame = cv2.resize(annotated_frame, (848, 480))
+        self.color_frame = annotated_frame
         # cv2.imshow('Detecting pickle and tomato', resized_frame)
 
         return label, [wx, wy, wz]
@@ -153,19 +160,23 @@ def main():
         label, coord = vision.yolo_detection(vision.color_frame, depth_frame)
 
         depth_frame = np.asanyarray(depth_raw_frame.get_data())
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET)
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.15), cv2.COLORMAP_JET)
 
         print(label)
         if label is not None:
             vision.coord[VisionClass[label]] = coord
 
+        cv2.line(vision.color_frame, (640, 0), (640, 720), (0, 0, 255), 2)
+        cv2.line(vision.color_frame, (0, 360), (1280, 360), (0, 0, 255), 2)
+
         images = np.vstack((vision.color_frame, depth_colormap))
+        images = cv2.resize(images, (848, 960))
         cv2.imshow('Yolo', images)
-        # print("detected!!  ", coord)
+        print("detected!!  ", vision.coord)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    Vision.rs.close()
+    vision.rs.release()
 
 if __name__ == "__main__":
     main()

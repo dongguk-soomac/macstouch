@@ -27,8 +27,10 @@ class DepthCamera:
         self.align = rs.align(align_to)
         device_product_line = str(device.get_info(rs.camera_info.product_line))
         print("device product line:", device_product_line)
-        config.enable_stream(rs.stream.depth,  resolution_width,  resolution_height, rs.format.z16, 6)
-        config.enable_stream(rs.stream.color,  resolution_width,  resolution_height, rs.format.bgr8, 30)
+        config.enable_stream(rs.stream.depth,  1280,  720, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color,  1280,  720, rs.format.bgr8, 30)
+        # config.enable_stream(rs.stream.depth,  424,  240, rs.format.z16, 30)
+        # config.enable_stream(rs.stream.color,  320,  240, rs.format.bgr8, 30)
 
         # Start streaming
         self.pipeline.start(config)
@@ -39,7 +41,7 @@ class DepthCamera:
 
         self.spat_filter = rs.spatial_filter(1, 1, 5, 0)          # Spatial    - edge-preserving spatial smoothing
         self.temp_filter = rs.temporal_filter(1.0, 100.0, 3)    # Temporal   - reduces temporal noise
-        self.hole_filling = rs.hole_filling_filter(0)
+        self.hole_filling = rs.hole_filling_filter(1)
 
         # print(self.get_camera_intrinsics)
         # print(self.depth_intrinsics)
