@@ -22,7 +22,6 @@
         [100, 100, 100, 0, 0, 6],
         [100, 100, 100, 0, 0, 7]                
     ],
-    "tool_grip" : 30,
     "MaterialList" : ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
 
 }

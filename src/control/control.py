@@ -73,7 +73,7 @@ class Control:
         elif self.mode == 'vision':
             if self.action_state == 1:
                 print('##### [Mode : vision] step_1 : vision action')
-                self.control_action_pub('vision', self.material, None, self.tool_coord[self.material], self.tool_grip)            
+                self.control_action_pub('vision', None, None, self.vision_coord[self.material], None) # material -> None / grip_size -< None            
                 self.action_state += 1
 
             elif self.action_state == 2:
@@ -88,12 +88,12 @@ class Control:
         elif self.mode == 'pnp':
             if self.action_state == 1:
                 print('##### [Mode : pnp] step_1 : pick action')
-                self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size)            
+                self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
 
             elif self.action_state == 2:  
                 print('##### [Mode : pnp] step_2 : place action') 
-                self.control_action_pub('place', self.material, None, self.place_coord, None)            
+                self.control_action_pub('place', self.material, None, self.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
                 self.action_state += 1
 
             elif self.action_state == 3:
@@ -120,6 +120,21 @@ class Control:
             else:
                 pass          
     
+        elif self.mode == 'tool_get':
+            if self.action_state == 1:
+                print('##### [Mode : tool_get] step_1 : tool_get')
+                self.control_action_pub('tool_get', None, None, self.tool_coord[self.material], None)            
+                self.action_state += 1
+
+            elif self.action_state == 2:
+                print('##### [Mode : tool_get] step_2 : done')
+                msg = Bool()
+                msg.data = True
+                self.done.publish(msg)
+                self.action_state += 1
+            else:
+                pass          
+
     def action_done_cb(self, data):
         print("recived /action_done from pc_client")
         self.action()
