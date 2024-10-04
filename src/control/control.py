@@ -24,38 +24,100 @@ with open(json_file_path, 'r', encoding='utf-8') as file:
     coordinates_data = json.load(file)
 
 # MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cabage"]
-def transformation_camera(vision_coord, materail_coord):
-    pick_coord = deepcopy(vision_coord)
-    camera_thick = 25.2
-    camera_z_offset = camera_thick + 50 
-    tool = 218 # material index마다 값 설정 필요
+def transformation_camera(_material_index, _pick_coord, _materail_coord):
+    ############ Memo ############
+    # 기본 tool 길이 : 151
+    ##############################
 
-    if vision_coord[0] > 0: # 좌측 재료
-        camera_x_offset = tool + 6.18
-    else: # 우측 재료
-        camera_x_offset = tool - 6.18
-    
+    # 98.26, 39.8, 1226.9, -87.3, -2.18, 0
+    # 98.26, 39.8, 1220.9, -87.3, -2.18, 0
+    # 공용 변수
+    material_index = deepcopy(_material_index)
+    pick_coord = deepcopy(_pick_coord)
+    materail_coord = deepcopy(_materail_coord)
+
+    camera_thick = 25.2
+    camera_z_offset = camera_thick + 50 # 50 : 6축의 회전축과 카메라 체결부까지의 거리 
+    camera_stand_to_center = 6.18 # 카메라 거치대부터 카메라 센터까지의 거리(x축 거리)
+    camera_origin_translation_x = 9 # 카메라 원점 x 방향 조절
+    camera_origin_translation_y = 25 # 카메라 원점 y 방향 조절
+    min_z = 12 # 그리퍼가 바닥과 충돌하지 않는 높이
+
+    tool = None
+    z_offset_for_each_index = None
+
+    # cm to mm 변환
     for i in range(6):
         materail_coord[i] = materail_coord[i]*10
 
-    #x
-    if vision_coord[0] > 0: # 좌측 재료
-        pick_coord[0] = vision_coord[0] - camera_x_offset - materail_coord[1]
-    else: # 우측 재료
-        pick_coord[0] = vision_coord[0] + camera_x_offset + materail_coord[1]
+    # 재료별 튜닝
+    # tool: 카메라 마운트 ~ 엔드이펙터 길이
+    # z_offset_for_each_index: z 높이 조절 offset (+ : 높게, - : 낮게)
+    # rx, ry, rz: orientation 고정 ( [-90, 0, -180] : 카메라 포즈에서 그대로 내려간 것, [-45, 0, 180] : 카메라 포즈에서 45도 돌아서 내려간 것 ) -> 일부 재료는 vision에서 보내준 각도로 지정
+    if material_index == 0: # bread 
+        tool = 241
+        z_offset_for_each_index = -10
+        rz, ry, rx = -45, 0, 180
 
+    if material_index == 1: # meat
+        tool = 241
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
 
+    if material_index == 2: # cheeze
+        tool = 200
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
 
-    # y
-    pick_coord[1] = vision_coord[1] - materail_coord[0] + 25
-    # z
-    pick_coord[2] = np.max((vision_coord[2] - camera_z_offset - materail_coord[2] - 12, 3))
+    if material_index == 3: # pickle ### okay ###
+        tool = 212.5
+        z_offset_for_each_index = -(12 -5.5) # 5.5는 튜닝 후 End effector 치수 변경 고려
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 4: # onion
+        tool = 200
+        z_offset_for_each_index = 0   
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 5: # sauce
+        tool = 200
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 6: # tomato
+        tool = 212.5
+        z_offset_for_each_index = 11
+        rz, ry, rx = -45, 0, 180
+          
+    if material_index == 7: # lettuce ### ing ###
+        tool = 283
+        z_offset_for_each_index = -10
+        rz, ry, rx = -90, 0, -180
+
+    # x방향 pick좌표 설정
+    if pick_coord[0] > 0: # 우측 재료
+        camera_x_offset = tool + camera_stand_to_center
+        pick_coord[0] = pick_coord[0] - camera_x_offset - materail_coord[1] + camera_origin_translation_x
+    
+    else: # 좌측 재료
+        camera_x_offset = tool - camera_stand_to_center
+        pick_coord[0] = pick_coord[0] + camera_x_offset + materail_coord[1] - camera_origin_translation_x
+
+    # y방향 pick좌표 설정
+    pick_coord[1] = pick_coord[1] - materail_coord[0] + camera_origin_translation_y
+
+    # z방향 pick좌표 설정
+    pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
+    
+    # twist : 추후 개발
     #rz
-    pick_coord[3] = -90 
+    pick_coord[3] = rz
+
     #ry
-    pick_coord[4] = 0
+    pick_coord[4] = ry
+
     #rx
-    pick_coord[5] = -180
+    pick_coord[5] = rx
 
     return pick_coord
 
@@ -125,8 +187,9 @@ class Control:
 
         elif self.mode == 'pnp':
             if self.action_state == 1:
-                pick_coord = transformation_camera(self.vision_coord[self.material], list(self.coord))
+                pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord))
                 print('##### [Mode : pnp] step_1 : pick action')
+                print(pick_coord)
                 self.control_action_pub('pick', None, self.grip_mode, pick_coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
 

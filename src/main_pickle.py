@@ -183,10 +183,10 @@ def main():
     status = None
 
     mode = 2
-    material = 3
+    material = 0
 
     while not rospy.is_shutdown():
-        pickle = input("Press 'y' to start pickle test:     ")
+        pickle = input(f"Press 'y' to start {MaterialList[material]} test:     ")
 
         if pickle == 'y':
 
@@ -212,23 +212,23 @@ def main():
                 rospy.sleep(0.2)
 
 
-            # rospy.sleep(2)
-            # print("step 4: vision")
-            # # vision: pickle
-            # control.control_done = False
-            # req.vision_req(material=material)
-            # while vision.coords[material]['ready'] == False:
-            #     rospy.sleep(0.2)
+            rospy.sleep(2)
+            print("step 4: vision")
+            # vision: pickle
+            control.control_done = False
+            req.vision_req(material=3)
+            while vision.coords[material]['ready'] == False:
+                rospy.sleep(0.2)
 
-            # print("step 5: control pnp")
-            # # control: pnp - pickle
-            # vision.coords[material]['ready'] = False
-            # req.control_req(mode=3, material=material,
-            #                 grip_mode=vision.coords[material]['grip_mode'],
-            #                 coord=vision.coords[material]['coord'],
-            #                 size=vision.coords[material]['size'])
-            # while control.control_done == False:
-            #     rospy.sleep(0.2)
+            print("step 5: control pnp")
+            # control: pnp - pickle
+            vision.coords[material]['ready'] = False
+            req.control_req(mode=3, material=material,
+                            grip_mode=vision.coords[material]['grip_mode'],
+                            coord=vision.coords[material]['coord'],
+                            size=vision.coords[material]['size'])
+            while control.control_done == False:
+                rospy.sleep(0.2)
 
             # print("step 6: tool_return")
             # # control: tool_return

@@ -40,8 +40,9 @@ class Vision:
 
         self.coord_limit = {"meat": [[-20, 20],[-20, 20], [50, 60]],
                             "pickle": [[-20, 20],[-20, 20], [25, 35]], 
-                            "tomato": [[-20, 20],[-20, 20], [50, 60]]}
+                            "tomato": [[-20, 20],[-20, 20], [25, 35]]}
         self.coord = {"meat": None, "pickle": None, "tomato": None}
+        self.offset = {"meat": [0,0], "pickle": [0,0], "tomato": [-0.4, 0.4]}
 
     def test(self):
         ret, depth_raw_frame, color_raw_frame = self.rs.get_raw_frame()
@@ -64,7 +65,7 @@ class Vision:
         while available is False:
             # coord = self.yolo_detection(self.color_frame, depth_frame)
             available = self.coord_check(target)
-            print(available)
+            print(target, available)
             
         mode, grip_pos, size = self.grip_detection(target)
 
@@ -93,7 +94,7 @@ class Vision:
             boxes = result.boxes
             for box in boxes:
                 confidence = box.conf
-                if confidence > 0.0:
+                if confidence > 0.8:
                     xyxy = box.xyxy.tolist()[0]
                     cx = int((xyxy[2]+xyxy[0])//2)
                     cy = int((xyxy[3]+xyxy[1])//2)
@@ -113,6 +114,9 @@ class Vision:
         bbox = list(map(int, _bbox)) 
         x, y, x2, y2 = bbox
 
+        center_xy[0] += int(self.offset[VisionClass[label]][0] * (x2 - x) * np.cos(45 * np.pi/180))
+        center_xy[1] += int(self.offset[VisionClass[label]][1] * (y2 - y) * np.sin(45 * np.pi/180))
+        
         depth = round((depth_frame.get_distance(center_xy[0], center_xy[1]) * 100), 2)
         print(self.rs.depth_intrinsics)
         wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(self.rs.depth_intrinsics, [center_xy[0], center_xy[1]], depth)
@@ -126,6 +130,7 @@ class Vision:
         cv2.line(annotated_frame, (640, 0), (640, 720), (0, 0, 255), 2)
         cv2.line(annotated_frame, (0, 360), (1280, 360), (0, 0, 255), 2)
         cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
+        cv2.circle(annotated_frame, (center_xy[0], center_xy[1]), 10, color, -1, lineType=None, shift=None)
         print(wx, wy, wz)
 
         # resized_frame = cv2.resize(annotated_frame, (848, 480))
@@ -141,7 +146,7 @@ class Vision:
     
     def pub(self, target, mode, grip_pos, size):
         data = vision_info()
-        data.material = target
+        data.material = 0
         data.grip_mode = 0
         data.coord = grip_pos
         data.size = size

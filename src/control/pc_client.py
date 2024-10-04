@@ -38,15 +38,23 @@ class Action:
         self.vision_pos = coordinates_data["vision_coord"]
         self.tool_pos = coordinates_data["tool_coord"]
 
-        # offset
-        self.pnp_offset = [0, 0, 100, 0, 0, 0]
-        self.pnp_offset_back = [0, 0, -100, 0, 0, 0]
-        self.tool_offset_mount = [100, 0, 0, 0, 0, 0]
-        self.tool_offset_mount_back = [-100, 0, 0, 0, 0, 0]
-        self.tool_offset_up = [0, 0, 60, 0, 0, 0]
-        self.tool_offset_down = [0, 0, -60, 0, 0, 0]
+        ## offset
+        # pick and place offset
+        self.pnp_offset = [0, 0, 150, 0, 0, 0]
+        self.pnp_offset_back = [0, 0, -150, 0, 0, 0]
+
+        # tool_get(or return) x offset 
+        self.tool_offset_mount = [150, 0, 0, 0, 0, 0]
+        self.tool_offset_mount_back = [-150, 0, 0, 0, 0, 0]
+
         self.tool_offset_forward = [50, 0, 0, 0, 0, 0]
         self.tool_offset_backward = [-50, 0, 0, 0, 0, 0]
+
+        # tool_get(or return) z offset
+        self.tool_offset_up = [0, 0, 60, 0, 0, 0]
+        self.tool_offset_down = [0, 0, -60, 0, 0, 0]
+
+
         
     # 소켓 통신으로 보내는 문자열 생성
     def make_str(self, *args):
@@ -57,7 +65,7 @@ class Action:
     # 문자 배열을 0,0,0,0,0,0 형태로 바꿔주는 함수
     def format_array(self, data):
         result = ','.join(map(str, data))
-        print(result)
+        # print(result)
         
         return result
 
@@ -76,9 +84,9 @@ class Action:
     #          "ReadState"]
 
     def action_init_pos(self, target_position):
-        setdata1 = self.make_str("ToolBase",  self.format_array([0]))
-        setdata2 = self.make_str("MovePoint", self.format_array(target_position))
-        setdata = '='.join([setdata1, setdata2])
+        # setdata1 = self.make_str("ToolBase",  self.format_array([0]))
+        setdata = self.make_str("MovePoint", self.format_array(target_position))
+        #setdata = '='.join([setdata1, setdata2])
         socke.send_data(setdata)
 
     def action_vision(self, vision_coord):
@@ -89,32 +97,54 @@ class Action:
         setdata = '='.join([setdata1])
         socke.send_data(setdata)
 
-
-    def action_tool_get(self, tool_index, tool_position):
-        
-        # # 1. ME(Material_end)
-        # setdata1 = self.make_str("MovePoint", self.format_array([list(tool_position)[i] + self.tool_offset_mount_back[i] for i in range(len(self.tool_offset_mount_back))]))        
-        # # 2. 그리퍼 열기
-        # setdata2 = self.make_str("Gripper", True)
-        # # 3. 장착하는 방향
-        # setdata3 = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount))
-        # # 4. 위로
-        # setdata4 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_up))
-        # # 5. 뒤로
-        # setdata5 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_backward))
-        # 6. change tool
-        setdata6 = self.make_str("ToolNum",  self.format_array([tool_index]))
+    def action_tool_get(self, tool_index, tool_position): # for test
+        setdata = self.make_str("ToolNum",  self.format_array([tool_index]))
         print(tool_index)
-        
-        # setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6])
-        setdata = '='.join([setdata6])
         socke.send_data(setdata)
+
+    # def action_tool_get(self, tool_index, tool_position):
+    #     # 1. change tool
+    #     setdata1 = self.make_str("ToolBase",  self.format_array([tool_index]))
+    #     print(tool_index)        
+    #     # 2. ME(Material_end)
+    #     setdata2 = self.make_str("MovePoint", self.format_array([list(tool_position)[i] + self.tool_offset_mount_back[i] for i in range(len(self.tool_offset_mount_back))]))        
+    #     # 3. 그리퍼 열기
+    #     setdata3 = self.make_str("Gripper", True)
+    #     # 4. 장착하는 방향
+    #     setdata4 = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount))
+    #     # 5. 위로
+    #     setdata5 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_up))
+    #     # 6. 뒤로
+    #     setdata6 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_mount_back))
+    #     # 7. change tool
+    #     setdata7 = self.make_str("ToolNum",  self.format_array([tool_index]))
+    #     print(tool_index)
+        
+    #     setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7])
+    #     socke.send_data(setdata)
+
+    def tool_return(self, tool_coord):
+        # 1. change tool
+        setdata1 = self.make_str("ToolBase",  self.format_array([0]))
+        # 2. ME(Material_end)
+        setdata2 = self.make_str("MovePoint", self.format_array(list(tool_coord) + self.tool_offset_mount_back + self.tool_offset_up))
+        # 3. 그리퍼 열기
+        setdata3 = self.make_str("Gripper", True)
+        # 4. 오프셋 위로
+        setdata4 = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount))
+        # 5. 오프셋 아래로
+        setdata5 = self.make_str("MoveOffset", self.format_array(self.tool_offset_down))
+        # 6. 오프셋 뒤로
+        setdata6 = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount_back))
+
+        final_data = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6])
+        socke.send_data(final_data)
 
 
     def action_pick(self, grip_mode, material_coord):
         
         # 1. 뒤로
-        # setdata1 = self.make_str("MoveOffset", self.format_array(self.tool_offset_backward))
+        # setdata1 = self.make_str("MoveOffset", self.format_array(self.tool_offset_mount_back))
         # 2. pick (MM = 실제 물체 위치)
         #setdata2 = self.make_str("MoveGrip", "pick", self.format_array(material_coord), self.format_array(-self.pnp_offset), False)
         ## 2번 임시동작
@@ -152,21 +182,7 @@ class Action:
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4])
         socke.send_data(setdata)
 
-    def tool_return(self, tool_coord):
 
-        # 1. change tool
-        setdata1 = self.make_str("ToolBase",  self.format_array([0]))
-        # 2. ME(Material_end)
-        setdata2 = self.make_str("MovePoint", self.format_array(list(tool_coord) + self.tool_offset_backward + self.tool_offset_up))
-        # 3. 오프셋 위로
-        setdata3 = self.make_str("MoveOffset", self.format_array(self.tool_offset_forward))
-        # 4. 오프셋 아래로
-        setdata4 = self.make_str("MoveOffset", self.format_array(self.tool_offset_down))
-        # 5. 오프셋 뒤로
-        setdata5 = self.make_str("MoveOffset", self.format_array(self.tool_offset_backward))
-
-        final_data = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5])
-        socke.send_data(final_data)
         
 
 ## 2. ROS ########################################################

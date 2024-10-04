@@ -7,7 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # 이미지 파일 불러오기
-image_path = './data/IMG_2803.png'  # 여기에 파일 경로를 입력하세요
+image_path = './data/color_.png'  # 여기에 파일 경로를 입력하세요
 image = cv2.imread(image_path)
 
 # BGR 채널을 RGB로 변환
@@ -32,8 +32,8 @@ original_edges = cv2.Canny(original_gray, 100, 200)
 
 # 허프 변환을 이용한 원 검출 함수
 def detect_circles(image_edges, original_image):
-    circles = cv2.HoughCircles(image_edges, cv2.HOUGH_GRADIENT, dp=1.2, minDist=20,
-                               param1=50, param2=30, minRadius=180, maxRadius=250) # 파라미터 튜닝 필요
+    circles = cv2.HoughCircles(image_edges, cv2.HOUGH_GRADIENT, dp=1.5, minDist=140,
+                               param1=10, param2=37, minRadius=100, maxRadius=110) # 파라미터 튜닝 필요
 
     if circles is not None:
         circles = np.round(circles[0, :]).astype("int")
