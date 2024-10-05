@@ -70,9 +70,9 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
         rz, ry, rx = -90, 0, -180
 
     if material_index == 3: # pickle ### okay ###
-        tool = 212.5
-        z_offset_for_each_index = -(12 -5.5) # 5.5는 튜닝 후 End effector 치수 변경 고려
-        rz, ry, rx = -90, 0, -180
+        tool = 212.5 # 기존 피클 그리퍼 치수
+        z_offset_for_each_index = -10 # 5.5는 튜닝 후 End effector 치수 변경 고려
+        rz, ry, rx = -45, 0, 180
 
     if material_index == 4: # onion
         tool = 200
@@ -85,13 +85,13 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
         rz, ry, rx = -90, 0, -180
 
     if material_index == 6: # tomato
-        tool = 212.5
-        z_offset_for_each_index = 11
+        tool = 216.24
+        z_offset_for_each_index = -25
         rz, ry, rx = -45, 0, 180
           
     if material_index == 7: # lettuce ### ing ###
         tool = 283
-        z_offset_for_each_index = -10
+        z_offset_for_each_index = -30
         rz, ry, rx = -90, 0, -180
 
     # x방향 pick좌표 설정

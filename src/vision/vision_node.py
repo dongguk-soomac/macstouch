@@ -24,7 +24,7 @@ VisionClass = ["meat", "pickle", "tomato"]
 resolution_width, resolution_height = (1280,720)
 
 # model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
-model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
+model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/zeus1.pt'
 
 class Vision:
     def __init__(self) -> None:
@@ -42,7 +42,7 @@ class Vision:
                             "pickle": [[-20, 20],[-20, 20], [25, 35]], 
                             "tomato": [[-20, 20],[-20, 20], [25, 35]]}
         self.coord = {"meat": None, "pickle": None, "tomato": None}
-        self.offset = {"meat": [0,0], "pickle": [0,0], "tomato": [-0.4, 0.4]}
+        self.offset = {"meat": [0,0], "pickle": [-0.2,0.2], "tomato": [-0.3, 0.3]}
 
     def test(self):
         ret, depth_raw_frame, color_raw_frame = self.rs.get_raw_frame()
@@ -94,11 +94,12 @@ class Vision:
             boxes = result.boxes
             for box in boxes:
                 confidence = box.conf
-                if confidence > 0.8:
+                if confidence > 0.0:
                     xyxy = box.xyxy.tolist()[0]
                     cx = int((xyxy[2]+xyxy[0])//2)
                     cy = int((xyxy[3]+xyxy[1])//2)
-                    dis = (cx-resolution_width/2)**2+(cy-resolution_height/2)**2
+                    # dis = (cx-resolution_width/2-75)**2+(cy-resolution_height/2)**2
+                    dis = round((depth_frame.get_distance(cx, cy) * 100), 2)
                     x, y, x2, y2 = list(map(int, xyxy)) 
                     cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
                     if dis < min_dis:
@@ -146,7 +147,7 @@ class Vision:
     
     def pub(self, target, mode, grip_pos, size):
         data = vision_info()
-        data.material = 0
+        data.material = target
         data.grip_mode = 0
         data.coord = grip_pos
         data.size = size
@@ -165,7 +166,7 @@ def main():
         label, coord = vision.yolo_detection(vision.color_frame, depth_frame)
 
         depth_frame = np.asanyarray(depth_raw_frame.get_data())
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.15), cv2.COLORMAP_JET)
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.25), cv2.COLORMAP_JET)
 
         print(label)
         if label is not None:

@@ -40,7 +40,7 @@ class DepthCamera:
         self.depth_intrinsics = depth_profile.get_intrinsics()
 
         self.spat_filter = rs.spatial_filter(1, 1, 5, 0)          # Spatial    - edge-preserving spatial smoothing
-        self.temp_filter = rs.temporal_filter(1.0, 100.0, 3)    # Temporal   - reduces temporal noise
+        self.temp_filter = rs.temporal_filter(0.2, 50.0, 7)    # Temporal   - reduces temporal noise
         self.hole_filling = rs.hole_filling_filter(2)
 
         # print(self.get_camera_intrinsics)

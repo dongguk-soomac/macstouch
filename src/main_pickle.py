@@ -183,7 +183,7 @@ def main():
     status = None
 
     mode = 2
-    material = 0
+    material = 7
 
     while not rospy.is_shutdown():
         pickle = input(f"Press 'y' to start {MaterialList[material]} test:     ")
@@ -211,14 +211,13 @@ def main():
             while control.control_done == False:
                 rospy.sleep(0.2)
 
-
-            rospy.sleep(2)
-            print("step 4: vision")
-            # vision: pickle
-            control.control_done = False
-            req.vision_req(material=3)
-            while vision.coords[material]['ready'] == False:
-                rospy.sleep(0.2)
+            # rospy.sleep(2)
+            # print("step 4: vision")
+            # # vision: pickle
+            # control.control_done = False
+            # req.vision_req(material=material)
+            # while vision.coords[material]['ready'] == False:
+            #     rospy.sleep(0.2)
 
             print("step 5: control pnp")
             # control: pnp - pickle
