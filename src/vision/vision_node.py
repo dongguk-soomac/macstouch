@@ -19,9 +19,9 @@ from copy import deepcopy
 # from macstouch_config import MaterialList
 from realsense.realsense_camera import DepthCamera
 
-MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
-VisionClass = ["meat", "pickle", "tomato"]
-resolution_width, resolution_height = (848, 480)
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", "case"]
+VisionClass = ["pickle", "tomato"]
+resolution_width, resolution_height = (1280,  720)
 
 model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
 # model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
@@ -35,58 +35,101 @@ class Vision:
 
         self.rs = DepthCamera(resolution_width, resolution_height)
         ret, depth_raw_frame, color_raw_frame = self.rs.get_raw_frame()
+
         self.color_frame = np.asanyarray(color_raw_frame.get_data())
+        self.depth_raw_frame = depth_raw_frame
+        self.depth_frame = depth_raw_frame.as_depth_frame()
+        self.depth_image = np.asanyarray(depth_raw_frame.get_data())
+
         self.depth_scale = self.rs.get_depth_scale()
 
-        self.coord_limit = {"meat": [[-20, 20],[-20, 20], [50, 60]],
-                            "pickle": [[-20, 20],[-20, 20], [50, 60]], 
-                            "tomato": [[-20, 20],[-20, 20], [50, 60]]}
-        self.coord = {"meat": None, "pickle": None, "tomato": None}
+        self.yolo_color = np.asanyarray(color_raw_frame.get_data())
+        self.yolo_depth = np.asanyarray(depth_raw_frame.get_data())
 
-    def test(self):
-        ret, depth_raw_frame, color_raw_frame = self.rs.get_raw_frame()
-        color_frame = np.asanyarray(color_raw_frame.get_data())
-        depth_frame = depth_raw_frame.as_depth_frame()
-
-        available = False
-
-        while available is False:
-            available = self.coord_check()
-
-        return self.coord
+        # 그리퍼가 도달 가능한 범위 내에 있는지 확인하기 위한 좌표 (월드 좌표계)
+        self.coord_limit =  {"pickle":  [[-20, 20],[-20, 20], [25, 35]], 
+                             "tomato":  [[-20, 20],[-20, 20], [25, 35]],
+                             "lettuce": [[0, 4],[0, 0], [25, 35]], 
+                             "onion":   [[0, 4],[0, 0], [25, 35]]}
+        # 후보 grip coord를 생성하기 위한 값 ( x, y, theta )
+        self.pos_offset =   {"pickle":  [-0.2, 0.2, 45],
+                             "tomato":  [[-0.3, 0.3, 45]]}
+        # cost 계산을 위한 바트 높이 (픽셀 좌표계)
+        self.w_limit =      {"pickle":  [427, 856],
+                             "tomato":  [427, 856]}
+        # cost 계산을 위한 바트 너비 (픽셀 좌표계)
+        self.h_limit =      {"pickle":  [0, 720],
+                             "tomato":  [0, 720]}
+ 
+        # 바트 안에 4개 구역 ROI 시작점 설정 (픽셀 좌표계)
+        self.rois =         {"lettuce": [[427, 0], [427, 144], [427, 288], [427, 576]],
+                             "onion":   [[427, 0], [427, 144], [427, 288], [427, 576]]}
+        # ROI 너비, 높이 설정 (픽셀 좌표계)
+        self.wh_offset =    {"lettuce": [int(1280/3), int(720/5)],
+                             "onion":   [int(1280/3), int(720/5)]}
 
     def vision_callback(self, msg):
-        target = MaterialList[msg.data]
+        target_idx = msg.data
+        target = MaterialList[target_idx]
         print("target : ", target)
 
-        available = False
+        mode, grip_pos, size = self.detection(target)
 
-        while available is False:
-            # coord = self.yolo_detection(self.color_frame, depth_frame)
-            available = self.coord_check(target)
-            print(available)
-            
-        mode, grip_pos, size = self.grip_detection(target)
+        self.pub(target_idx, mode, grip_pos, size)
 
-        self.pub(msg.data, mode, grip_pos, size)
+    def detection(self, target):
+        mode = 0
+        coord = np.zeros(6)
+        size = 0
 
-    def coord_check(self, target):
-        if self.coord[target] is not None:
-            x_check = self.coord_limit[target][0][0] < self.coord[target][0] < self.coord_limit[target][0][1]
-            y_check = self.coord_limit[target][1][0] < self.coord[target][1] < self.coord_limit[target][1][1]
-            z_check = self.coord_limit[target][2][0] < self.coord[target][2] < self.coord_limit[target][2][1]
+        valid = False
+
+        if target == 'tomato':
+            while valid is False:
+                detected, centers, center_xy, bbox, coord = self.yolo_detection()
+                if not detected:
+                    mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    valid = self.coord_check(target, coord)
+        elif target == 'pickle':
+            while valid is False:
+                detected, centers, center_xy, bbox, coord = self.yolo_detection()
+                if not detected:
+                    mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    valid = self.coord_check(target, coord)
+        elif target == 'lettuce':
+            while valid is False:
+                coord = self.depth_detection(target)
+                valid = self.coord_check(target, coord)
+        elif target == 'onion':
+            while valid is False:
+                coord = self.depth_detection()
+                valid = self.coord_check(target, coord)
+        # else:
+        #     while valid is False:
+        #         mode, coord = 0, [coord[0], coord[1], coord[2], 0, 0, 0]
+        #         valid = self.coord_check(target, coord)
+
+        return mode, coord, size
+
+    def coord_check(self, target, coord):
+        x_check = self.coord_limit[target][0][0] <= coord[0] <= self.coord_limit[target][0][1]
+        y_check = self.coord_limit[target][1][0] <= coord[1] <= self.coord_limit[target][1][1]
+        z_check = self.coord_limit[target][2][0] <= coord[2] <= self.coord_limit[target][2][1]
         return x_check * y_check * z_check
 
-    def yolo_detection(self, color_frame, depth_frame):
-        results = self.model(color_frame)
+    def yolo_detection(self):
+        results = self.model(self.color_frame)
 
-        annotated_frame = color_frame.copy()
+        annotated_frame = self.color_frame.copy()
 
         min_dis = 99999999999
         center_xy = [424,240]
+        centers = []
 
         _bbox = None
-        label = None
+
+        center_weight = 1.0
+        z_weight = 1.0
 
         for result in results:
             boxes = result.boxes
@@ -96,46 +139,133 @@ class Vision:
                     xyxy = box.xyxy.tolist()[0]
                     cx = int((xyxy[2]+xyxy[0])//2)
                     cy = int((xyxy[3]+xyxy[1])//2)
-                    dis = (cx-resolution_width/2)**2+(cy-resolution_height/2)**2
+                    centers.append([cx, cy])
+                    
+                    x, y, x2, y2 = list(map(int, xyxy)) 
+                    cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
+                    
+                    center_dis = (cx-resolution_width/2)**2+(cy-resolution_height/2)**2
+                    z_dis = round((self.depth_frame.get_distance(cx, cy) * 100), 2)
+                    dis = center_weight * center_dis + z_weight * z_dis
+
                     if dis < min_dis:
                         min_dis = dis
                         center_xy = [cx, cy]
                         _bbox = xyxy
-                        label = int(box.cls[0])
 
         if _bbox is None:
-            return None, [0,0,0]
+            return False, [[0,0]], [0,0], [0,0,0,0], [0,0,0]
 
         color = [255, 0, 0]
         bbox = list(map(int, _bbox)) 
         x, y, x2, y2 = bbox
 
-        depth = round((depth_frame.get_distance(center_xy[0], center_xy[1]) * 100), 2)
+        depth = round((self.depth_frame.get_distance(center_xy[0], center_xy[1]) * 100), 2)
         wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(self.rs.depth_intrinsics, [center_xy[0], center_xy[1]], depth)
-        wx = round(wx, 3)
-        wy = round(wy, 3)
+        wx = round(wx*(848/1280), 3)
+        wy = round(wy*(480/720), 3)
         wz = round(wz, 3)
         
-        cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
+        # cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
 
         cv2.rectangle(annotated_frame, (x, y), (x2, y2), color, 2)
-        print(wx, wy, wz)
+        cv2.line(annotated_frame, (640, 0), (640, 720), (0, 0, 255), 2)
+        cv2.line(annotated_frame, (0, 360), (1280, 360), (0, 0, 255), 2)
 
-        resized_frame = cv2.resize(annotated_frame, (848, 480))
-        self.color_frame = resized_frame
-        # cv2.imshow('Detecting pickle and tomato', resized_frame)
+        self.yolo_color = annotated_frame
+        self.yolo_depth = np.asanyarray(self.depth_raw_frame.get_data())
+        self.yolo_depth_frame = self.depth_frame
 
-        return label, [wx, wy, wz]
+        return True, centers, center_xy, bbox, [wx, wy, wz]
+    
+    def cost_function(self, pos, centers, h_limit, w_limit):
+        obs_cost = min([np.linalg.norm(np.array(pos) - np.array(center)) for center in centers])
+        h_cost = min(pos[0] - h_limit[0], h_limit[1] - pos[0])
+        w_cost = min(pos[1] - w_limit[0], w_limit[1] - pos[1])
+        wall_cost = min(h_cost, w_cost)
 
-    def grip_detection(self, target):
-        coord = deepcopy(self.coord[target])
-        self.coord[target] = None
-        return 'pnp', [coord[0], coord[1], coord[2], 0, 0, 0], 0
+        return 1.0 * obs_cost + 1.0 * wall_cost if wall_cost >= 20 else 1.0 * obs_cost + wall_cost*10000
+    
+    def grip_detection(self, target, centers, center_xy, bbox, coord):
+        annotated_frame = self.yolo_color.copy()
+
+        x, y, x2, y2 = bbox
+        w = x2 - x
+        h = y2 - y
+
+        offset = self.pos_offset[target]
+        candidate_pos = [[center_xy[0] + x[0] * w * np.cos(x[2] * np.pi/180),
+                          center_xy[1] + x[1] * h * np.cos(x[2] * np.pi/180)] for x in offset]
+        
+        min_cost = float('inf')
+        selected_pos = candidate_pos[0]
+        selected_idx = 0
+        for idx, pos in enumerate(candidate_pos):
+            cost = self.cost_function(pos, centers, self.h_limit[target], self.w_limit[target])
+            if cost < min_cost:
+                min_cost = cost
+                selected_pos = pos
+                selected_idx = idx
+        
+        selected_pos = list(map(int, selected_pos))
+
+        depth = round((self.depth_frame.get_distance(selected_pos[0], selected_pos[1]) * 100), 2)
+        wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(self.rs.depth_intrinsics, [selected_pos[0], selected_pos[1]], depth)
+        wx = round(wx*(848/1280), 3)
+        wy = round(wy*(480/720), 3)
+        wz = round(wz, 3)
+
+        color = [255, 0, 0]
+        cv2.circle(annotated_frame, (selected_pos[0], selected_pos[1]), 10, color, -1, lineType=None, shift=None)
+        cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
+        self.yolo_color = annotated_frame
+
+        return selected_idx, [wx, wy, wz, 0, 0, 0]
+    
+    def depth_detection(self, target):
+        annotated_color = self.color_frame.copy()
+        annotated_depth = self.depth_image.copy()
+
+        rois = self.rois[target]
+        
+        min_depth = float('inf')
+        min_idx = 2
+
+        for idx, roi in enumerate(rois):
+            x, y = roi
+            w, h = self.wh_offset[target]
+            roi_depth = self.depth_image[y:y+h, x:x+w]
+
+            # ROI 내 유효한 뎁스 값 필터링
+            valid_depth = roi_depth[roi_depth > 0]  # 유효한 뎁스 값만 사용 (0은 무효한 값)
+
+            # ROI의 평균 뎁스 계산
+            if len(valid_depth) > 0:
+                mean_depth = np.mean(valid_depth)
+            else:
+                print("ROI 내 유효한 뎁스 값이 없습니다.")
+                continue
+            
+            cv2.rectangle(annotated_color, (x, y), (x+w, y+h), (255, 0, 0), 2)  # ROI 사각형 그리기
+            cv2.putText(annotated_color, "{}".format(mean_depth), (int(x + w/2), int(y + h/2)), 0, 1.0, (255, 0, 0), 2)
+
+            if mean_depth < min_depth:
+                min_idx = idx
+        
+        x, y = rois[min_idx]
+        w, h = self.wh_offset[target]
+        
+        cv2.rectangle(annotated_color, (x, y), (x+w, y+h), (0, 255, 0), 2)
+
+        self.yolo_color = annotated_color
+        self.yolo_depth = annotated_depth
+
+        return [idx, 0, min_depth]
     
     def pub(self, target, mode, grip_pos, size):
         data = vision_info()
         data.material = target
-        data.grip_mode = 0
+        data.grip_mode = mode
         data.coord = grip_pos
         data.size = size
         self.vision_pub.publish(data)
@@ -144,24 +274,26 @@ class Vision:
 def main():
     rospy.init_node("vision_node")
     vision = Vision()
-
     while not rospy.is_shutdown():
-        # coord = vision.test()
         ret, depth_raw_frame, color_raw_frame = vision.rs.get_raw_frame()
+
+        if not color_raw_frame or not depth_raw_frame:
+            continue
+
         vision.color_frame = np.asanyarray(color_raw_frame.get_data())
-        depth_frame = depth_raw_frame.as_depth_frame()
-        label, coord = vision.yolo_detection(vision.color_frame, depth_frame)
+        vision.depth_raw_frame = depth_raw_frame
+        vision.depth_frame = depth_raw_frame.as_depth_frame()
+        vision.depth_image = np.asanyarray(depth_raw_frame.get_data())
 
-        depth_frame = np.asanyarray(depth_raw_frame.get_data())
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.03), cv2.COLORMAP_JET)
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.03), cv2.COLORMAP_JET)
+        yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.03), cv2.COLORMAP_JET)
+        
+        origin_images = np.vstack((vision.color_frame, depth_colormap))
+        yolo_images = np.vstack((vision.yolo_color, yolo_depth_colormap))
 
-        print(label)
-        if label is not None:
-            vision.coord[VisionClass[label]] = coord
-
-        images = np.vstack((vision.color_frame, depth_colormap))
-        cv2.imshow('Yolo', images)
-        # print("detected!!  ", coord)
+        images = np.hstack((origin_images, yolo_images))
+        images = cv2.resize(images, (1696, 960))
+        cv2.imshow('Camera and Yolo Detection', images)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
