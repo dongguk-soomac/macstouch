@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# 현재 코드 따로 복사해두고, 나중에 main에서 pull 받아서 새로 브랜치 판 다음에 control 바뀐거 수정해서 pr하기
+
 import rospy
 import numpy as np
 import math
@@ -121,14 +123,38 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
 
     return pick_coord
 
+class ManageCoord:
+    def __init__(self):
+        global coordinates_data
+        self.bread_coord = coordinates_data["bread_coord"]
+        self.place_coord = coordinates_data["place_coord"]     
+        self.bread_action = 0 # 0은 빵 처음 옮기는 것, 1은 빵을 덮는 것
+        
+    def change_bread_action(self):
+        if self.bread_action == 0: 
+            self.bread_action = 1
+        elif self.bread_action == 1: 
+            self.bread_action = 0            
+        else:
+            pass
+
+    def change_bread_pick_coord(self):
+        self.bread_index += 1
+        # self.bread_coord = 
+
 class Control:
     def __init__(self) -> None:
+        # ManageCoord class
+        self.managecoord = ManageCoord()
+
         # json 파일의 고정 좌표값 저장
         global coordinates_data
         self.init_pos = coordinates_data["init_pos"]
         self.place_coord = coordinates_data["place_coord"]
         self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
         self.vision_coord = coordinates_data["vision_coord"]
+        self.bread_coord = coordinates_data["bread_coord"]
+
         # [635, 100, 400, -90, 0, -90]
 
         # ros setting
@@ -184,21 +210,32 @@ class Control:
                 self.action_state += 1
             else:
                 pass                  
-
+        
         elif self.mode == 'pnp':
             if self.action_state == 1:
-                pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord))
+                # 좌표 설정
+                if self.material == 0: # bread : 고정 좌표
+                    pick_coord = self.managecoord.bread_coord
+                else:
+                    pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord))
+
                 print('##### [Mode : pnp] step_1 : pick action')
                 print(pick_coord)
                 self.control_action_pub('pick', None, self.grip_mode, pick_coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
 
-            # elif self.action_state == 2:  
-            #     print('##### [Mode : pnp] step_2 : place action') 
-            #     self.control_action_pub('place', self.material, None, self.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-            #     self.action_state += 1
+            elif self.action_state == 2:  
+                if self.material == 0: # bread일 때 place 동작 구분
+                    print('##### [Mode : pnp] step_2 : bread_place action') 
+                    self.control_action_pub('bread_place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                    self.action_state += 1
 
-            elif self.action_state == 2:
+                else:
+                    print('##### [Mode : pnp] step_2 : place action') 
+                    self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                    self.action_state += 1
+
+            elif self.action_state == 3:
                 print('##### [Mode : pnp] step_3 : done')
                 msg = Bool()
                 msg.data = True
@@ -236,6 +273,9 @@ class Control:
                 self.action_state += 1
             else:
                 pass          
+        
+    
+
 
     def action_done_cb(self, data):
         self.action()

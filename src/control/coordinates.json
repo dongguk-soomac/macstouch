@@ -1,7 +1,7 @@
 {
     "description" : ["tool_coord_x(fixed) : 649.466 + 151(finger length), vision_coord_x(variable) : 507.5 + tool_length"],
     "init_pos" : [250, 150, 200, -90, 0, -180],
-    "place_coord" : [320, 150, 200, -90, 0, -180],
+    "place_coord" : [0, 740, 10, -45, 0, -180],
     "tool_coord" : [
         [798.201, 220.047, 276.159, -90, 0, -90],
         [798.201, 220.047, 276.159, -90, 0, -90],
@@ -22,6 +22,6 @@
         [723.74, 220.047, 400, -90, 0, -90],
         [790.5, 220.047, 400, -90, 0, -90]                
     ],
-    "MaterialList" : ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
-
+    "MaterialList" : ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"],
+    "bread_coord" : [470, 100, 5, -45, 0, 180]
 }
