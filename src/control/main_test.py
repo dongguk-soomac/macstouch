@@ -20,7 +20,7 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-
+    test_index = 0
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')
@@ -40,7 +40,7 @@ def main():
 
         elif mode== 'vision':
             control_data.mode = 'vision'
-            control_data.material = 3
+            control_data.material = test_index
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
             control_data.grip_size = 0
@@ -50,9 +50,10 @@ def main():
 
         elif mode == 'pnp':
             control_data.mode = 'pnp'
-            control_data.material = 3
+            control_data.material = test_index
             control_data.grip_mode = '0'
-            control_data.coord = [643,87.5,300,-15,0,180]
+            # control_data.coord = [500,500,300,-15,0,180]
+            control_data.coord = [0, 0, 25,-90, 0,-180]            
             control_data.grip_size = 30
             control_req.publish(control_data)
             print('Mode : pnp')
@@ -60,13 +61,23 @@ def main():
 
         elif mode == 'tool_return':
             control_data.mode = 'tool_return'
-            control_data.material = 3
+            control_data.material = test_index
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
             control_data.grip_size = 0
             control_req.publish(control_data)
             print('Mode : tool_return')
             print(control_data)
+
+        elif mode == 'tool_get':
+            control_data.mode = 'tool_get'
+            control_data.material = test_index
+            control_data.grip_mode = 'x'
+            control_data.coord = [0, 0, 0, 0, 0, 0]
+            control_data.grip_size = 0
+            control_req.publish(control_data)
+            print('Mode : tool_get')
+            print(control_data)            
         else:
             print('해당 mode는 존재하지 않습니다.')
 

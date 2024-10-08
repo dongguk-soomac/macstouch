@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 
+# 현재 코드 따로 복사해두고, 나중에 main에서 pull 받아서 새로 브랜치 판 다음에 control 바뀐거 수정해서 pr하기
+
 import rospy
 import numpy as np
 import math
 import time
 import json
 import os, sys
+
+from copy import deepcopy
 
 # msg
 from std_msgs.msg import Float32MultiArray as fl
@@ -22,14 +26,136 @@ with open(json_file_path, 'r', encoding='utf-8') as file:
     coordinates_data = json.load(file)
 
 # MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cabage"]
+def transformation_camera(_material_index, _pick_coord, _materail_coord):
+    ############ Memo ############
+    # 기본 tool 길이 : 151
+    ##############################
+
+    # 98.26, 39.8, 1226.9, -87.3, -2.18, 0
+    # 98.26, 39.8, 1220.9, -87.3, -2.18, 0
+    # 공용 변수
+    material_index = deepcopy(_material_index)
+    pick_coord = deepcopy(_pick_coord)
+    materail_coord = deepcopy(_materail_coord)
+
+    camera_thick = 25.2
+    camera_z_offset = camera_thick + 50 # 50 : 6축의 회전축과 카메라 체결부까지의 거리 
+    camera_stand_to_center = 6.18 # 카메라 거치대부터 카메라 센터까지의 거리(x축 거리)
+    camera_origin_translation_x = 9 # 카메라 원점 x 방향 조절
+    camera_origin_translation_y = 25 # 카메라 원점 y 방향 조절
+    min_z = 12 # 그리퍼가 바닥과 충돌하지 않는 높이
+
+    tool = None
+    z_offset_for_each_index = None
+
+    # cm to mm 변환
+    for i in range(6):
+        materail_coord[i] = materail_coord[i]*10
+
+    # 재료별 튜닝
+    # tool: 카메라 마운트 ~ 엔드이펙터 길이
+    # z_offset_for_each_index: z 높이 조절 offset (+ : 높게, - : 낮게)
+    # rx, ry, rz: orientation 고정 ( [-90, 0, -180] : 카메라 포즈에서 그대로 내려간 것, [-45, 0, 180] : 카메라 포즈에서 45도 돌아서 내려간 것 ) -> 일부 재료는 vision에서 보내준 각도로 지정
+    if material_index == 0: # bread 
+        tool = 241
+        z_offset_for_each_index = -10
+        rz, ry, rx = -45, 0, 180
+
+    if material_index == 1: # meat
+        tool = 241
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 2: # cheeze
+        tool = 200
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 3: # pickle ### okay ###
+        tool = 212.5 # 기존 피클 그리퍼 치수
+        z_offset_for_each_index = -10 # 5.5는 튜닝 후 End effector 치수 변경 고려
+        rz, ry, rx = -45, 0, 180
+
+    if material_index == 4: # onion
+        tool = 200
+        z_offset_for_each_index = 0   
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 5: # sauce
+        tool = 200
+        z_offset_for_each_index = 0
+        rz, ry, rx = -90, 0, -180
+
+    if material_index == 6: # tomato
+        tool = 216.24
+        z_offset_for_each_index = -25
+        rz, ry, rx = -45, 0, 180
+          
+    if material_index == 7: # lettuce ### ing ###
+        tool = 283
+        z_offset_for_each_index = -30
+        rz, ry, rx = -90, 0, -180
+
+    # x방향 pick좌표 설정
+    if pick_coord[0] > 0: # 우측 재료
+        camera_x_offset = tool + camera_stand_to_center
+        pick_coord[0] = pick_coord[0] - camera_x_offset - materail_coord[1] + camera_origin_translation_x
+    
+    else: # 좌측 재료
+        camera_x_offset = tool - camera_stand_to_center
+        pick_coord[0] = pick_coord[0] + camera_x_offset + materail_coord[1] - camera_origin_translation_x
+
+    # y방향 pick좌표 설정
+    pick_coord[1] = pick_coord[1] - materail_coord[0] + camera_origin_translation_y
+
+    # z방향 pick좌표 설정
+    pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
+    
+    # twist : 추후 개발
+    #rz
+    pick_coord[3] = rz
+
+    #ry
+    pick_coord[4] = ry
+
+    #rx
+    pick_coord[5] = rx
+
+    return pick_coord
+
+class ManageCoord:
+    def __init__(self):
+        global coordinates_data
+        self.bread_coord = coordinates_data["bread_coord"]
+        self.place_coord = coordinates_data["place_coord"]     
+        self.bread_action = 0 # 0은 빵 처음 옮기는 것, 1은 빵을 덮는 것
+        
+    def change_bread_action(self):
+        if self.bread_action == 0: 
+            self.bread_action = 1
+        elif self.bread_action == 1: 
+            self.bread_action = 0            
+        else:
+            pass
+
+    def change_bread_pick_coord(self):
+        self.bread_index += 1
+        # self.bread_coord = 
+
 class Control:
     def __init__(self) -> None:
+        # ManageCoord class
+        self.managecoord = ManageCoord()
+
         # json 파일의 고정 좌표값 저장
         global coordinates_data
         self.init_pos = coordinates_data["init_pos"]
         self.place_coord = coordinates_data["place_coord"]
-        self.tool_coord = coordinates_data["vision_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
-        self.tool_grip = coordinates_data["tool_grip"] # 장비 장착을 위한 그리퍼 제어 길이, 필요에 따라 재료마다 값 저장하는 방식으로도 변경 가능
+        self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
+        self.vision_coord = coordinates_data["vision_coord"]
+        self.bread_coord = coordinates_data["bread_coord"]
+
+        # [635, 100, 400, -90, 0, -90]
 
         # ros setting
         rospy.Subscriber('/control_req', control_info, self.control_cb)
@@ -84,17 +210,30 @@ class Control:
                 self.action_state += 1
             else:
                 pass                  
-
+        
         elif self.mode == 'pnp':
             if self.action_state == 1:
+                # 좌표 설정
+                if self.material == 0: # bread : 고정 좌표
+                    pick_coord = self.managecoord.bread_coord
+                else:
+                    pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord))
+
                 print('##### [Mode : pnp] step_1 : pick action')
-                self.control_action_pub('pick', None, self.grip_mode, self.coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
+                print(pick_coord)
+                self.control_action_pub('pick', None, self.grip_mode, pick_coord, self.grip_size) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
 
             elif self.action_state == 2:  
-                print('##### [Mode : pnp] step_2 : place action') 
-                self.control_action_pub('place', self.material, None, self.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                self.action_state += 1
+                if self.material == 0: # bread일 때 place 동작 구분
+                    print('##### [Mode : pnp] step_2 : bread_place action') 
+                    self.control_action_pub('bread_place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                    self.action_state += 1
+
+                else:
+                    print('##### [Mode : pnp] step_2 : place action') 
+                    self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                    self.action_state += 1
 
             elif self.action_state == 3:
                 print('##### [Mode : pnp] step_3 : done')
@@ -103,7 +242,7 @@ class Control:
                 self.done.publish(msg)
                 self.action_state += 1  
             else:
-                pass       
+                pass                
 
         elif self.mode == 'tool_return':
             if self.action_state == 1:
@@ -123,7 +262,7 @@ class Control:
         elif self.mode == 'tool_get':
             if self.action_state == 1:
                 print('##### [Mode : tool_get] step_1 : tool_get')
-                self.control_action_pub('tool_get', None, None, self.tool_coord[self.material], None)            
+                self.control_action_pub('tool_get', self.material, None, self.tool_coord[self.material], None)            
                 self.action_state += 1
 
             elif self.action_state == 2:
@@ -134,9 +273,11 @@ class Control:
                 self.action_state += 1
             else:
                 pass          
+        
+    
+
 
     def action_done_cb(self, data):
-        print("recived /action_done from pc_client")
         self.action()
         
     def control_action_pub(self, action, material, grip_mode, coord, grip_size):
@@ -157,8 +298,6 @@ class Control:
         action_msg.grip_mode = grip_mode
         action_msg.coord = coord
         action_msg.grip_size = grip_size
-
-        print(coord)
         
         self.action_req.publish(action_msg)
 
@@ -170,3 +309,7 @@ if __name__ == '__main__':
 
     except rospy.ROSInterruptException:
         rospy.loginfo('Program is shut down')
+
+
+
+# "init_pos" : [98.26, 39.8, 1069.9, -87.3, -2.18, 0],
