@@ -19,8 +19,6 @@ from task_maker import Task
 OrderList = []
 IngId = None
 
-TaskList = []
-
 
 class Burger:
     def __init__(self) -> None:
@@ -125,7 +123,6 @@ class Request:
 
 
 def main():
-    global IngId, TaskList
     rospy.init_node("main_node")
 
     req = Request()
@@ -136,15 +133,21 @@ def main():
     control = Control()
 
     task = Task()
+    TaskList = None
     step = 0
     status = None
+
 
     while rospy.is_shutdown():
         if IngId is None and len(OrderList) != 0:
             IngId = OrderList[0].id
-            TaskList = Task.order_to_task()
+            OrderList[0].state = "Ing"
+            TaskList = Task.order_to_task(OrderList[0].menu)
         
-        status = req.task_control(step)
+        step, status = req.task_control(TaskList, step)
+
+        print("현재 진행 중인 주문 : ", IngId)
+        print("현재 진행 중인 단계 : ", TaskList[step])
 
 
 if __name__ == "__main__":
