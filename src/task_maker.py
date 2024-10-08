@@ -1,9 +1,10 @@
 from copy import deepcopy
-# MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
+# MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", "case"]
 
 class Task:
-    def __init__(self) -> None:
+    def __init__(self):
         self.templete = [{'mode': "init_pos",    'material': -1},
+                         {'mode': "tool_get",    'material': -1},
                          {'mode': "vision",      'material': -1},
                          {'mode': "pnp",         'material': -1},
                          {'mode': "tool_return", 'material': -1}]
@@ -19,31 +20,39 @@ class Task:
 
         for material, repeat in enumerate(order):
             if material == 0:
-                vision = self.make_task(1, material)
+                tool_get = self.make_task(1, material)
+                tasks.append(tool_get)
+                vision = self.make_task(2, material)
                 tasks.append(vision)
 
-                pnp = self.make_task(2, material)
+                pnp = self.make_task(3, material)
                 tasks.append(pnp)
 
             else:
-                vision = self.make_task(1, material)
-                pnp = self.make_task(2, material)
+                if repeat >= 1:
+                    tool_get = self.make_task(1, material)
+                    tasks.append(tool_get)
+                    vision = self.make_task(2, material)
+                    pnp = self.make_task(3, material)
 
-                task = [vision, pnp] * repeat
-                
-                tasks.extend(task)
+                    task = [vision, pnp] * repeat
+                    
+                    tasks.extend(task)
 
-            tool_return = self.make_task(3, material)
+            tool_return = self.make_task(4, material)
             tasks.append(tool_return)
             
         # bread
-        vision = self.make_task(1, 0)
+        tool_get = self.make_task(1, 0)
+        tasks.append(tool_get)
+
+        vision = self.make_task(2, 0)
         tasks.append(vision)
 
-        pnp = self.make_task(2, 0)
+        pnp = self.make_task(3, 0)
         tasks.append(pnp)
 
-        tool_return = self.make_task(3, 0)
+        tool_return = self.make_task(4, 0)
         tasks.append(tool_return)
 
         return tasks
