@@ -26,7 +26,7 @@ with open(json_file_path, 'r', encoding='utf-8') as file:
     coordinates_data = json.load(file)
 
 # MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "cabage"]
-def transformation_camera(_material_index, _pick_coord, _materail_coord):
+def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     ############ Memo ############
     # 기본 tool 길이 : 151
     ##############################
@@ -37,6 +37,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
     material_index = deepcopy(_material_index)
     pick_coord = deepcopy(_pick_coord)
     materail_coord = deepcopy(_materail_coord)
+    mode = deepcopy(_mode)
 
     camera_thick = 25.2
     camera_z_offset = camera_thick + 50 # 50 : 6축의 회전축과 카메라 체결부까지의 거리 
@@ -51,6 +52,18 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
     # cm to mm 변환
     for i in range(6):
         materail_coord[i] = materail_coord[i]*10
+
+    # x방향 pick좌표 설정
+    if pick_coord[0] > 0: # 우측 재료
+        camera_x_offset = tool + camera_stand_to_center
+        pick_coord[0] = pick_coord[0] - camera_x_offset - materail_coord[1] + camera_origin_translation_x
+    
+    else: # 좌측 재료
+        camera_x_offset = tool - camera_stand_to_center
+        pick_coord[0] = pick_coord[0] + camera_x_offset + materail_coord[1] - camera_origin_translation_x
+
+    # y방향 pick좌표 설정
+    pick_coord[1] = pick_coord[1] - materail_coord[0] + camera_origin_translation_y
 
     # 재료별 튜닝
     # tool: 카메라 마운트 ~ 엔드이펙터 길이
@@ -73,12 +86,25 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
 
     if material_index == 3: # pickle ### okay ###
         tool = 212.5 # 기존 피클 그리퍼 치수
-        z_offset_for_each_index = -10 # 5.5는 튜닝 후 End effector 치수 변경 고려
+        z_offset_for_each_index = -10
         rz, ry, rx = -45, 0, 180
 
     if material_index == 4: # onion
         tool = 200
-        z_offset_for_each_index = 0   
+        z_offset_for_each_index = 0
+
+        # x, y값 고정
+        pick_coord[0] = 500
+        pick_coord[1] = 100            
+        if mode == '1':
+            pick_coord[0] += 0
+        elif mode == '2':
+            pick_coord[0] += 50
+        elif mode == '3':
+            pick_coord[0] += 100
+        elif mode == '4':
+            pick_coord[0] += 150      
+                 
         rz, ry, rx = -90, 0, -180
 
     if material_index == 5: # sauce
@@ -94,19 +120,20 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
     if material_index == 7: # lettuce ### ing ###
         tool = 283
         z_offset_for_each_index = -30
+
+        # x, y값 고정
+        pick_coord[0] = 500
+        pick_coord[1] = 100            
+        if mode == '1':
+            pick_coord[0] += 0
+        elif mode == '2':
+            pick_coord[0] += 50
+        elif mode == '3':
+            pick_coord[0] += 100
+        elif mode == '4':
+            pick_coord[0] += 150
+
         rz, ry, rx = -90, 0, -180
-
-    # x방향 pick좌표 설정
-    if pick_coord[0] > 0: # 우측 재료
-        camera_x_offset = tool + camera_stand_to_center
-        pick_coord[0] = pick_coord[0] - camera_x_offset - materail_coord[1] + camera_origin_translation_x
-    
-    else: # 좌측 재료
-        camera_x_offset = tool - camera_stand_to_center
-        pick_coord[0] = pick_coord[0] + camera_x_offset + materail_coord[1] - camera_origin_translation_x
-
-    # y방향 pick좌표 설정
-    pick_coord[1] = pick_coord[1] - materail_coord[0] + camera_origin_translation_y
 
     # z방향 pick좌표 설정
     pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
@@ -126,21 +153,54 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord):
 class ManageCoord:
     def __init__(self):
         global coordinates_data
-        self.bread_coord = coordinates_data["bread_coord"]
-        self.place_coord = coordinates_data["place_coord"]     
-        self.bread_action = 0 # 0은 빵 처음 옮기는 것, 1은 빵을 덮는 것
-        
-    def change_bread_action(self):
-        if self.bread_action == 0: 
-            self.bread_action = 1
-        elif self.bread_action == 1: 
-            self.bread_action = 0            
-        else:
-            pass
+        self.place_coord = coordinates_data["place_coord"] # 초기 place 좌표        
+        self.bread_coord = coordinates_data["bread_coord"] # 초기 빵 좌표
+        self.meat_coord = coordinates_data["meat_coord"] # 초기 빵 좌표
 
+        self.material_height = coordinates_data["material_height"] # place 높이 조절을 위한 재료 높이, 튜닝 필요
+        self.bread_offset = coordinates_data["bread_offset"] # 빵 간격, 튜닝 필요
+        self.meat_offset = coordinates_data["meat_offset"] # 패티 간격, 튜닝 필요
+
+        # 빵, 패티의 초기 index 설정
+        self.bread_index = 0
+        self.meat_index = 0        
+        
     def change_bread_pick_coord(self):
         self.bread_index += 1
-        # self.bread_coord = 
+        if self.bread_index <= 3: # 0, 1, 2, 3번 빵은 x축 방향으로 나열 됨
+            self.bread_coord[0] += self.bread_offset[0]
+
+        elif self.bread_index == 4: # 4번 빵은 3번빵으로부터 y축 방향으로 한 칸 떨어진 빵
+            self.bread_coord[1] += self.bread_offset[1]
+
+        elif self.bread_index >= 5: # 4, 5, 6, 7번 빵은 x축 방향으로 나열 됨
+            self.bread_coord[0] -= self.bread_offset[2]
+
+    def change_meat_pick_coord(self):
+        self.bread_index += 1
+        if self.meat_index <= 3: # 0, 1, 2, 3번 패티는 x축 방향으로 나열 됨
+            self.meat_coord[0] += self.meat_offset[0]
+
+        elif self.meat_index == 4: # 4번 패티는 3번빵으로부터 y축 방향으로 한 칸 떨어진 빵
+            self.meat_coord[1] += self.meat_offset[1]
+
+        elif self.meat_index >= 5: # 4, 5, 6, 7번 패티는 x축 방향으로 나열 됨
+            self.meat_coord[2] -= self.meat_offset[2]
+
+    def change_place_coord(self, material_index):
+        self.bread_index += self.material_height[material_index]
+
+    def reset_place_coord(self):
+        self.place_coord = coordinates_data["place_coord"] # 초기 place 좌표
+
+    def reset_bread_coord(self):
+        self.bread_index = 0
+        self.bread_coord = coordinates_data["bread_coord"] # 초기 빵 좌표
+
+    def reset_meat_coord(self):
+        self.meat_index = 0        
+        self.meat_coord = coordinates_data["meat_coord"] # 초기 빵 좌표
+
 
 class Control:
     def __init__(self) -> None:
@@ -150,10 +210,8 @@ class Control:
         # json 파일의 고정 좌표값 저장
         global coordinates_data
         self.init_pos = coordinates_data["init_pos"]
-        self.place_coord = coordinates_data["place_coord"]
         self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
         self.vision_coord = coordinates_data["vision_coord"]
-        self.bread_coord = coordinates_data["bread_coord"]
 
         # [635, 100, 400, -90, 0, -90]
 
@@ -162,8 +220,6 @@ class Control:
         rospy.Subscriber('/action_done', Bool, self.action_done_cb)
 
         self.action_req = rospy.Publisher('/action_req', action_info, queue_size=10)
-
-
         self.done = rospy.Publisher('/done', Bool, queue_size=10)
 
         self.action_state = 0
@@ -216,8 +272,14 @@ class Control:
                 # 좌표 설정
                 if self.material == 0: # bread : 고정 좌표
                     pick_coord = self.managecoord.bread_coord
-                else:
-                    pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord))
+                    self.managecoord.change_bread_pick_coord()
+                
+                if self.material == 0: # meat : 고정 좌표
+                    pick_coord = self.managecoord.meat_coord
+                    self.managecoord.change_meat_pick_coord()
+
+                else: # 변동 좌표에 대한 pick_coord 설정
+                    pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord), self.grip_mode)
 
                 print('##### [Mode : pnp] step_1 : pick action')
                 print(pick_coord)
@@ -234,6 +296,7 @@ class Control:
                     print('##### [Mode : pnp] step_2 : place action') 
                     self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
                     self.action_state += 1
+                    self.managecoord.change_place_coord(self.material) # place 위치 상승
 
             elif self.action_state == 3:
                 print('##### [Mode : pnp] step_3 : done')

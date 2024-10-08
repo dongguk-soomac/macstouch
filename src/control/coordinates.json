@@ -23,5 +23,9 @@
         [790.5, 220.047, 400, -90, 0, -90]                
     ],
     "MaterialList" : ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"],
-    "bread_coord" : [470, 100, 5, -45, 0, 180]
+    "bread_coord" : [470, 100, 5, -45, 0, 180],
+    "meat_coord" : [470, 100, 5, -45, 0, 180],
+    "material_height" : [15, 10, 0, 5, 5, 0, 8, 10],
+    "bread_offset" : [100, 50, 50],
+    "meat_offset" : [100, 50, 50]
 }
