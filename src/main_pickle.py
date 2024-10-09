@@ -148,7 +148,7 @@ class Request:
         elif mode == 3: # pnp
             request.mode = ModeList[mode]
             request.material = material
-            request.grip_mode = "grip_mode"
+            request.grip_mode = grip_mode
             request.coord = coord
             request.grip_size = 30
 
@@ -184,7 +184,7 @@ def main():
     status = None
 
     mode = 2
-    material = 6
+    material = 4
 
     while not rospy.is_shutdown():
         pickle = input(f"Press 'y' to start {MaterialList[material]} test:     ")
@@ -220,15 +220,15 @@ def main():
             while vision.coords[material]['ready'] == False:
                 rospy.sleep(0.2)
 
-            # print("step 5: control pnp")
-            # # control: pnp - pickle
-            # vision.coords[material]['ready'] = False
-            # req.control_req(mode=3, material=material,
-            #                 grip_mode=vision.coords[material]['grip_mode'],
-            #                 coord=vision.coords[material]['coord'],
-            #                 size=vision.coords[material]['size'])
-            # while control.control_done == False:
-            #     rospy.sleep(0.2)
+            print("step 5: control pnp")
+            # control: pnp - pickle
+            vision.coords[material]['ready'] = False
+            req.control_req(mode=3, material=material,
+                            grip_mode=vision.coords[material]['grip_mode'],
+                            coord=vision.coords[material]['coord'],
+                            size=vision.coords[material]['size'])
+            while control.control_done == False:
+                rospy.sleep(0.2)
 
             # print("step 6: tool_return")
             # # control: tool_return

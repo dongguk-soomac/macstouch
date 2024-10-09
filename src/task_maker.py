@@ -7,7 +7,8 @@ class Task:
                          {'mode': "tool_get",    'material': -1},
                          {'mode': "vision",      'material': -1},
                          {'mode': "pnp",         'material': -1},
-                         {'mode': "tool_return", 'material': -1}]
+                         {'mode': "tool_return", 'material': -1},
+                         {'mode': "finish",      'material': -1}]
 
     def make_task(self, mode, material):
         task = deepcopy(self.templete[mode])
@@ -28,8 +29,18 @@ class Task:
                 pnp = self.make_task(3, material)
                 tasks.append(pnp)
 
-            else:
+            elif material == 1 or material == 4:
                 if repeat >= 1:
+                    tool_get = self.make_task(1, material)
+                    tasks.append(tool_get)
+
+                    pnp = self.make_task(3, material)
+
+                    task = [pnp] * repeat
+                    
+                    tasks.extend(task)
+
+            else:
                     tool_get = self.make_task(1, material)
                     tasks.append(tool_get)
                     vision = self.make_task(2, material)
@@ -54,6 +65,9 @@ class Task:
 
         tool_return = self.make_task(4, 0)
         tasks.append(tool_return)
+
+        finish = self.make_task(5, -1)
+        tasks.append(finish)
 
         return tasks
     
