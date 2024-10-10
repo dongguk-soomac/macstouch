@@ -23,8 +23,8 @@ MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato",
 VisionClass = ["pickle", "tomato"]
 resolution_width, resolution_height = (1280,  720)
 
-model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
-# model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
+# model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
+model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/zeus1.pt'
 
 class Vision:
     def __init__(self) -> None:
@@ -52,21 +52,23 @@ class Vision:
                              "lettuce": [[0, 4],[0, 0], [25, 35]], 
                              "onion":   [[0, 4],[0, 0], [25, 35]]}
         # 후보 grip coord를 생성하기 위한 값 ( x, y, theta )
-        self.pos_offset =   {"pickle":  [-0.2, 0.2, 45],
-                             "tomato":  [[-0.3, 0.3, 45]]}
+        self.pos_offset =   {"pickle":  [[0.2, -0.2, 45],[-0.2, -0.2, 45],[-0.2, 0.2, 45],[0.2, 0.2, 45]],
+                             "tomato":  [[0.35, -0.35, 45],[-0.35, -0.35, 45],[-0.35, 0.35, 45],[0.35, 0.35, 45]]}
         # cost 계산을 위한 바트 높이 (픽셀 좌표계)
-        self.w_limit =      {"pickle":  [427, 856],
-                             "tomato":  [427, 856]}
+        self.w_limit =      {"pickle":  [510, 930],
+                             "tomato":  [510, 930]}
         # cost 계산을 위한 바트 너비 (픽셀 좌표계)
-        self.h_limit =      {"pickle":  [0, 720],
-                             "tomato":  [0, 720]}
- 
+        self.h_limit =      {"pickle":  [120, 720],
+                             "tomato":  [120, 720]}
+
         # 바트 안에 4개 구역 ROI 시작점 설정 (픽셀 좌표계)
-        self.rois =         {"lettuce": [[427, 0], [427, 144], [427, 288], [427, 576]],
-                             "onion":   [[427, 0], [427, 144], [427, 288], [427, 576]]}
+        self.rois =         {"lettuce": [[560, 100], [560, 144+100], [560, 288+100], [560, 432+100]],
+                             "onion":   [[560, 100], [560, 144+100], [560, 288+100], [560, 432+100]]}
         # ROI 너비, 높이 설정 (픽셀 좌표계)
-        self.wh_offset =    {"lettuce": [int(1280/3), int(720/5)],
-                             "onion":   [int(1280/3), int(720/5)]}
+        self.wh_offset =    {"lettuce": [int(1280/3-100), int(720/5)],
+                             "onion":   [int(1280/3-100), int(720/5)]}
+        
+        self.rotation = [[-45, 0, 180], [45, 0, 180], [135, 0, 180], [-135, 0, 180]]
 
     def vision_callback(self, msg):
         target_idx = msg.data
@@ -87,22 +89,29 @@ class Vision:
         if target == 'tomato':
             while valid is False:
                 detected, centers, center_xy, bbox, coord = self.yolo_detection()
-                if not detected:
+                print('yolo done')
+                if detected:
                     mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    print('grip done')
                     valid = self.coord_check(target, coord)
         elif target == 'pickle':
             while valid is False:
                 detected, centers, center_xy, bbox, coord = self.yolo_detection()
-                if not detected:
+                print('yolo done')
+                if detected:
                     mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    print('grip done')
                     valid = self.coord_check(target, coord)
+                    print('valid ', valid)
         elif target == 'lettuce':
             while valid is False:
-                coord = self.depth_detection(target)
+                mode, coord = self.depth_detection(target)
+                print('depth done')
                 valid = self.coord_check(target, coord)
         elif target == 'onion':
             while valid is False:
-                coord = self.depth_detection()
+                mode, coord = self.depth_detection(target)
+                print('depth done')
                 valid = self.coord_check(target, coord)
         # else:
         #     while valid is False:
@@ -121,6 +130,7 @@ class Vision:
         results = self.model(self.color_frame)
 
         annotated_frame = self.color_frame.copy()
+        color = [0, 255, 0]
 
         min_dis = 99999999999
         center_xy = [424,240]
@@ -128,14 +138,14 @@ class Vision:
 
         _bbox = None
 
-        center_weight = 1.0
-        z_weight = 1.0
+        center_weight = 0
+        z_weight = 1
 
         for result in results:
             boxes = result.boxes
             for box in boxes:
                 confidence = box.conf
-                if confidence > 0.8:
+                if confidence > 0.5:
                     xyxy = box.xyxy.tolist()[0]
                     cx = int((xyxy[2]+xyxy[0])//2)
                     cy = int((xyxy[3]+xyxy[1])//2)
@@ -155,6 +165,8 @@ class Vision:
 
         if _bbox is None:
             return False, [[0,0]], [0,0], [0,0,0,0], [0,0,0]
+        
+        centers.remove(center_xy)
 
         color = [255, 0, 0]
         bbox = list(map(int, _bbox)) 
@@ -179,12 +191,16 @@ class Vision:
         return True, centers, center_xy, bbox, [wx, wy, wz]
     
     def cost_function(self, pos, centers, h_limit, w_limit):
-        obs_cost = min([np.linalg.norm(np.array(pos) - np.array(center)) for center in centers])
-        h_cost = min(pos[0] - h_limit[0], h_limit[1] - pos[0])
-        w_cost = min(pos[1] - w_limit[0], w_limit[1] - pos[1])
+        if len(centers) > 0:
+            obs_cost = min([np.linalg.norm(np.array(pos) - np.array(center), ord=2) for center in centers])
+        else:
+            obs_cost = 0
+        w_cost = min(abs(pos[0] - w_limit[0]), abs(w_limit[1] - pos[0]))
+        h_cost = min(abs(pos[1] - h_limit[0]), abs(h_limit[1] - pos[1]))
         wall_cost = min(h_cost, w_cost)
+        print(obs_cost, wall_cost)
 
-        return 1.0 * obs_cost + 1.0 * wall_cost if wall_cost >= 20 else 1.0 * obs_cost + wall_cost*10000
+        return 1.0 * obs_cost + 5.0 * wall_cost # if wall_cost <= 50 else 1.0 * obs_cost + wall_cost*0.000001
     
     def grip_detection(self, target, centers, center_xy, bbox, coord):
         annotated_frame = self.yolo_color.copy()
@@ -197,15 +213,17 @@ class Vision:
         candidate_pos = [[center_xy[0] + x[0] * w * np.cos(x[2] * np.pi/180),
                           center_xy[1] + x[1] * h * np.cos(x[2] * np.pi/180)] for x in offset]
         
-        min_cost = float('inf')
+        max_cost = 0
         selected_pos = candidate_pos[0]
         selected_idx = 0
         for idx, pos in enumerate(candidate_pos):
             cost = self.cost_function(pos, centers, self.h_limit[target], self.w_limit[target])
-            if cost < min_cost:
-                min_cost = cost
+            print(pos, cost)
+            if cost > max_cost:
+                max_cost = cost
                 selected_pos = pos
                 selected_idx = idx
+            cv2.circle(annotated_frame, (int(pos[0]),int(pos[1])), 10, (0, 255, 0), -1, lineType=None, shift=None)
         
         selected_pos = list(map(int, selected_pos))
 
@@ -220,7 +238,11 @@ class Vision:
         cv2.putText(annotated_frame, "{}, {}, {}".format(wx, wy, wz), (x + 5, y + 60), 0, 1.0, color, 2)
         self.yolo_color = annotated_frame
 
-        return selected_idx, [wx, wy, wz, 0, 0, 0]
+        rz = self.rotation[selected_idx][0]
+        ry = self.rotation[selected_idx][1]
+        rx = self.rotation[selected_idx][2]
+        
+        return str(selected_idx), [wx, wy, wz, rz, ry, rx]
     
     def depth_detection(self, target):
         annotated_color = self.color_frame.copy()
@@ -247,10 +269,11 @@ class Vision:
                 continue
             
             cv2.rectangle(annotated_color, (x, y), (x+w, y+h), (255, 0, 0), 2)  # ROI 사각형 그리기
-            cv2.putText(annotated_color, "{}".format(mean_depth), (int(x + w/2), int(y + h/2)), 0, 1.0, (255, 0, 0), 2)
-
+            cv2.putText(annotated_color, "{}".format(mean_depth), (int(x + 30), int(y + h/2)), 0, 1.0, (255, 0, 0), 2)
+            print(mean_depth)
             if mean_depth < min_depth:
                 min_idx = idx
+                min_depth = mean_depth
         
         x, y = rois[min_idx]
         w, h = self.wh_offset[target]
@@ -259,8 +282,9 @@ class Vision:
 
         self.yolo_color = annotated_color
         self.yolo_depth = annotated_depth
+        # wx, wy, wz = pyrealsense2.rs2_deproject_pixel_to_point(self.rs.depth_intrinsics, (int(rois[min_idx][0]+w/2), int(rois[min_idx][1]+h/2)), min_depth)
 
-        return [idx, 0, min_depth]
+        return str(min_idx), [0, 0, min_depth*0.1]
     
     def pub(self, target, mode, grip_pos, size):
         data = vision_info()
@@ -273,31 +297,36 @@ class Vision:
 
 def main():
     rospy.init_node("vision_node")
+    rate = rospy.Rate(10)
     vision = Vision()
     while not rospy.is_shutdown():
         ret, depth_raw_frame, color_raw_frame = vision.rs.get_raw_frame()
 
         if not color_raw_frame or not depth_raw_frame:
             continue
-
+        
         vision.color_frame = np.asanyarray(color_raw_frame.get_data())
         vision.depth_raw_frame = depth_raw_frame
         vision.depth_frame = depth_raw_frame.as_depth_frame()
         vision.depth_image = np.asanyarray(depth_raw_frame.get_data())
 
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.03), cv2.COLORMAP_JET)
-        yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.03), cv2.COLORMAP_JET)
+        vision.detection('onion')
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.15), cv2.COLORMAP_JET)
+        yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.15), cv2.COLORMAP_JET)
         
         origin_images = np.vstack((vision.color_frame, depth_colormap))
         yolo_images = np.vstack((vision.yolo_color, yolo_depth_colormap))
 
         images = np.hstack((origin_images, yolo_images))
-        images = cv2.resize(images, (1696, 960))
+        images = cv2.resize(images, (848*2, 480*2))
+
         cv2.imshow('Camera and Yolo Detection', images)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
-    Vision.rs.close()
+        rate.sleep()
+
+    vision.rs.release()
 
 if __name__ == "__main__":
     main()
