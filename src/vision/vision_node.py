@@ -310,9 +310,9 @@ def main():
         vision.depth_frame = depth_raw_frame.as_depth_frame()
         vision.depth_image = np.asanyarray(depth_raw_frame.get_data())
 
-        # vision.detection('onion')
-        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.25), cv2.COLORMAP_JET)
-        yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.25), cv2.COLORMAP_JET)
+        vision.detection('onion')
+        depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.15), cv2.COLORMAP_JET)
+        yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.15), cv2.COLORMAP_JET)
         
         origin_images = np.vstack((vision.color_frame, depth_colormap))
         yolo_images = np.vstack((vision.yolo_color, yolo_depth_colormap))

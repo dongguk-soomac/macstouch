@@ -5,6 +5,15 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import pyrealsense2
+
+from realsense.realsense_camera import DepthCamera
+
+def main():
+    rs = DepthCamera(resolution_width, resolution_height)
+
+if __name__ == "__main__":
+    main()
 
 # 이미지 파일 불러오기
 image_path = './data/imagecopy.png'  # 여기에 파일 경로를 입력하세요
