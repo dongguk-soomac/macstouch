@@ -12,8 +12,12 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import numpy as np
 
-from macstouch_config import *
+# from macstouch_config import *
 from task_maker import Task
+
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
+WeightLimit = [10, 10, 10, 10, 10, 10, 10, 10]
+ModeList = ["init_pos", "vision", "pnp", "tool_return"]
 
 
 OrderList = []
@@ -81,7 +85,7 @@ class WorkSpace:
 class Vision:
     def __init__(self) -> None:
         self.vision_sub = rospy.Subscriber('/pick_coord', vision_info, self.vision_callback, queue_size=1)
-        self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
+        self.coords = [{'ready': False, 'grip_mode': 'x', 'coord': [0,0,0,0,0,0], 'size': 0}] * len(MaterialList)
 
     def vision_callback(self, msg):
         self.coords[msg.material] = {'ready': True, 'grip_mode': msg.grip_mode, 'coord': msg.coord, 'size': msg.size}
@@ -102,7 +106,7 @@ class Control:
 class Request:
     def __init__(self):
         self.vision = Vision()
-        self.vision_pub = rospy.Publisher('/vision_req', String, queue_size=10)
+        self.vision_pub = rospy.Publisher('/vision_req', Int16, queue_size=10)
         self.control_pub = rospy.Publisher('/control_req', control_info, queue_size=10)
         self.workspace_pub = rospy.Publisher('/workspace', String, queue_size=10)
         self.done_sub = rospy.Subscriber('/done', Bool, self.done_callback)
@@ -111,36 +115,53 @@ class Request:
         self.current_task = None
 
     def vision_req(self, material):
+        rospy.sleep(0.5)
         self.vision_pub.publish(material)
 
     def control_req(self, mode, material=None, grip_mode=None, coord=None, size=None):
         request = control_info()
+        print(mode)
 
         if mode == 'init_pos': # init_pos
             request.mode = mode
             request.material = -1
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 30
 
-        elif mode == 1: # vision
+        elif mode == 'tool_get': # tool_get
             request.mode = mode
             request.material = material
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 0
 
-        elif mode == 2: # pnp
+        elif mode == 'vision': # vision
+            request.mode = mode
+            request.material = material
+            request.grip_mode = '0'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 0
+
+
+        elif mode == 'pnp': # pnp
             request.mode = mode
             request.material = material
             request.grip_mode = grip_mode
             request.coord = coord
             request.grip_size = 30
 
-        elif mode == 3: # tool_return
+        elif mode == 'tool_return': # tool_return
             request.mode = mode
             request.material = material
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.grip_size = 0
+
+        elif mode == 'finish': # finish
+            request.mode = mode
+            request.material = 0
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.grip_size = 0
 
@@ -158,6 +179,7 @@ class Request:
             self.current_task = [self.task_list[step], 0]
 
         if self.current_task[1] == 0:
+            print(self.current_task)
             if self.current_task[0]['mode'] == 'pnp':
                 self.control_req(self.current_task[0]['mode'], self.current_task[0]['material'],
                                  grip_mode=self.vision.coords[self.current_task[0]['material']]['grip_mode'],
@@ -166,6 +188,7 @@ class Request:
                 self.vision.coords[self.current_task[0]['material']]['ready'] = False
             else:
                 self.control_req(self.current_task[0]['mode'], self.current_task[0]['material'])
+            self.current_task[1] = -1
 
 
         elif self.current_task[1] == 1:
@@ -217,10 +240,11 @@ def main():
 
         step, status = req.task_control(step)
 
-        print("현재 진행 중인 주문 : ", IngId)
-        print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
+        if status != 'done':
+            print("현재 진행 중인 주문 : ", IngId)
+            print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
 
-        if status == 'done':
+        else:
             print("{} 제작이 완료되었습니다.".format(IngId))
             gui.order_complete(IngId)
             IngId = None

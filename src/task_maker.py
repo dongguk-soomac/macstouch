@@ -1,5 +1,7 @@
+#!/usr/bin/env python
+# -- coding: utf-8 --
+
 from copy import deepcopy
-# MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", "case"]
 
 class Task:
     def __init__(self):
@@ -17,20 +19,22 @@ class Task:
         return task
 
     def order_to_task(self, order):
-        tasks = [self.templete[0]]
+        # tasks = [self.templete[0]]
+        tasks = []
 
         for material, repeat in enumerate(order):
             if material == 0:
                 tool_get = self.make_task(1, material)
                 tasks.append(tool_get)
-                vision = self.make_task(2, material)
-                tasks.append(vision)
 
                 pnp = self.make_task(3, material)
                 tasks.append(pnp)
 
-            elif material == 1 or material == 4:
-                if repeat >= 1:
+                tool_return = self.make_task(4, material)
+                tasks.append(tool_return)
+
+            elif material == 1 or material == 2 or material == 5:
+                if repeat:
                     tool_get = self.make_task(1, material)
                     tasks.append(tool_get)
 
@@ -40,7 +44,11 @@ class Task:
                     
                     tasks.extend(task)
 
+                    tool_return = self.make_task(4, material)
+                    tasks.append(tool_return)
+
             else:
+                if repeat:
                     tool_get = self.make_task(1, material)
                     tasks.append(tool_get)
                     vision = self.make_task(2, material)
@@ -50,38 +58,38 @@ class Task:
                     
                     tasks.extend(task)
 
-            tool_return = self.make_task(4, material)
-            tasks.append(tool_return)
+                    tool_return = self.make_task(4, material)
+                    tasks.append(tool_return)
             
-        # bread
-        tool_get = self.make_task(1, 0)
-        tasks.append(tool_get)
+        # # bread
+        # tool_get = self.make_task(1, 0)
+        # tasks.append(tool_get)
 
-        vision = self.make_task(2, 0)
-        tasks.append(vision)
+        # vision = self.make_task(2, 0)
+        # tasks.append(vision)
 
-        pnp = self.make_task(3, 0)
-        tasks.append(pnp)
+        # pnp = self.make_task(3, 0)
+        # tasks.append(pnp)
 
-        tool_return = self.make_task(4, 0)
-        tasks.append(tool_return)
+        # tool_return = self.make_task(4, 0)
+        # tasks.append(tool_return)
 
-        finish = self.make_task(5, -1)
+        finish = self.make_task(5, 0)
         tasks.append(finish)
 
         return tasks
     
 
-def main():
+# def main():
 
-    planner = Task()
+#     planner = Task()
 
-    order = [2, 1, 1, 3, 1, 1, 1, 1]
+#     order = [2, 0, 0, 3, 1, 1, 1, 1]
 
-    tasks = planner.order_to_task(order)
+#     tasks = planner.order_to_task(order)
 
-    for i in tasks:
-        print(i)
+#     for i in tasks:
+#         print(i)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+#     main()

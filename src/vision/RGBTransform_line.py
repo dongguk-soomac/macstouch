@@ -9,8 +9,44 @@ import pyrealsense2
 
 from realsense.realsense_camera import DepthCamera
 
+
+resolution_width, resolution_height = (1280,  720)
+
+
 def main():
     rs = DepthCamera(resolution_width, resolution_height)
+
+    while True:
+
+        ret, depth_raw_frame, color_raw_frame = rs.get_raw_frame()
+        color_frame = np.asanyarray(color_raw_frame.get_data())
+        depth_frame = np.asanyarray(depth_raw_frame.get_data())
+
+        cv2.imshow('RealSense Camera', color_frame)
+    
+        hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+        h, s, v = cv2.split(hsv)
+
+        equalizedV = cv2.equalizeHist(v)
+
+        hsv2 = cv2.merge([h,s,equalizedV])
+
+        hsvDst = cv2.cvtColor(hsv2, cv2.COLOR_HSV2BGR)
+
+        yCrCb = cv2.cvtColor(image, cv2.COLOR_BGR2YCrCb)
+
+        y, Cr, Cb = cv2.split(yCrCb)
+
+        
+
+        key = cv2.waitKey(1)
+
+        if key == 27:  # ESC를 누르면 종료
+            break
+
+    rs.release()
+    cv2.destroyAllWindows()
 
 if __name__ == "__main__":
     main()
