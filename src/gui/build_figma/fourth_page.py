@@ -3,15 +3,12 @@ from pathlib import Path
 import second_page
 import os
 import subprocess
-import rospy
-from std_msgs.msg import String
-from selected_menu import menu2pub
 from time import sleep
 
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build/assets/frame2")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame2")
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH_1 / Path(path)
@@ -21,8 +18,8 @@ global images
 images = {}
 
 def open_first_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/first_page.py'])  # 세 번째 페이지 실행
-    sleep(2)
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/first_page.py'])  # 세 번째 페이지 실행
+    sleep(1)
     window.destroy()
 
 # 첫 번째 페이지 구성
@@ -71,24 +68,6 @@ def create_fourth_page():
     window.resizable(False, False)
     window.mainloop()
 
-def publish_order(menu_index):
-    # Initialize the ROS node (name it whatever you want)
-    rospy.init_node('order_publisher_node', anonymous=True)
-    
-    # Create a publisher object, specify the topic name and the message type
-    order_pub = rospy.Publisher('/order', String, queue_size=10)
-    
-    # Wait for connections to establish (optional, for smooth operation)
-    rospy.sleep(1)
-    
-    # Publish a message (you can customize the message as needed)
-    order_msg = str(menu_index)
-    order_pub.publish(order_msg)
-    
-    # Ensure all ROS communication is complete before exiting (optional)
-    rospy.loginfo(f"Published message: {order_msg}")
-
 # 첫 번째 페이지 생성 실행
 if __name__ == "__main__":
     create_fourth_page()
-    publish_order(menu2pub)

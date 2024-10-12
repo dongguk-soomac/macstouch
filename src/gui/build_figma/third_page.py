@@ -3,23 +3,47 @@ from pathlib import Path
 import second_page
 import subprocess
 from time import sleep
+import rospy
+from std_msgs.msg import String
+from selected_menu import menu2pub
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+
+from menu_info import menu_list, price_list 
+
 
 def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
 def open_second_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/second_page.py'])  # 세 번째 페이지 실행
-    sleep(2)
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/second_page.py'])  # 세 번째 페이지 실행
+    sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/fourth_page.py'])  # 구매 페이지 실행
-    sleep(2)
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/fourth_page.py'])  # 구매 페이지 실행
+    sleep(1)
     window.destroy() 
+
+def publish_order(menu_index):
+    # Initialize the ROS node (name it whatever you want)
+    rospy.init_node('order_publisher_node', anonymous=True)
+    
+    # Create a publisher object, specify the topic name and the message type
+    order_pub = rospy.Publisher('/order', String, queue_size=10)
+    
+    # Wait for connections to establish (optional, for smooth operation)
+    rospy.sleep(1)
+    
+    # Publish a message (you can customize the message as needed)
+    order_msg = str(menu_index)
+    order_pub.publish(order_msg)
+    
+    # Ensure all ROS communication is complete before exiting (optional)
+    rospy.loginfo(f"Published message: {order_msg}")
+
 
 # 두 번째 페이지 구성
 def create_third_page():
@@ -70,7 +94,7 @@ def create_third_page():
         image=button_image_2,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_1 clicked"),
+        command=lambda: print_menu(0),
         relief="flat"
     )
     button_2.place(
@@ -86,7 +110,7 @@ def create_third_page():
         image=button_image_3,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_2 clicked"),
+        command=lambda: print_menu(1),
         relief="flat"
     )
     button_3.place(
@@ -102,7 +126,7 @@ def create_third_page():
         image=button_image_4,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_3 clicked"),
+        command=lambda: print_menu(2),
         relief="flat"
     )
     button_4.place(
@@ -118,7 +142,7 @@ def create_third_page():
         image=button_image_5,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: print("button_4 clicked"),
+        command=lambda: print_menu(3),
         relief="flat"
     )
     button_5.place(
@@ -166,7 +190,7 @@ def create_third_page():
         image=button_image_8,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: open_buy(window),
+        command=lambda:  [open_buy(window), publish_order(menu2pub)],
         relief="flat"
     )
     button_8.place(
@@ -183,32 +207,39 @@ def create_third_page():
         image=image_image_5
     )
 
-    canvas2.create_text(
-        754.0,
-        1446.0,
-        anchor="nw",
-        text="메뉴 1",
-        fill="#000000",
-        font=("Inter", 24 * -1)
-    )
+    def print_menu(menu_num):
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/selected_menu.py', 'w') as file:
+            file.write(f"menu2pub = [{menu_num}]\n")
+            
+        # price list 
+        canvas2.create_text(
+            754.0,
+            1446.0,
+            anchor="nw",
+            text=price_list[menu_num],
+            fill="#000000",
+            font=("Inter", 24 * -1)
+        )
 
-    canvas2.create_text(
-        544.0,
-        1446.0,
-        anchor="nw",
-        text="메뉴 1",
-        fill="#000000",
-        font=("Inter", 24 * -1)
-    )
+        # num
+        canvas2.create_text(
+            544.0,
+            1446.0,
+            anchor="nw",
+            text='1',
+            fill="#000000",
+            font=("Inter", 24 * -1)
+        )
 
-    canvas2.create_text(
-        81.0,
-        1446.0,
-        anchor="nw",
-        text="메뉴 1",
-        fill="#000000",
-        font=("Inter", 24 * -1)
-    )
+        # menu list
+        canvas2.create_text(
+            81.0,
+            1446.0,
+            anchor="nw",
+            text=menu_list[menu_num],
+            fill="#000000",
+            font=("Inter", 24 * -1)
+        )
 
     window.resizable(False, False)
     window.mainloop()

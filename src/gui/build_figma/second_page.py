@@ -2,9 +2,14 @@ from tkinter import Tk, Canvas, Button, PhotoImage, Frame
 from pathlib import Path
 import subprocess
 from time import sleep
+import rospy
+from std_msgs.msg import String
+from selected_menu import menu2pub
+
+
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
 
 from menu_info import menu_list, price_list 
 
@@ -13,15 +18,33 @@ def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
 def open_third_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/third_page.py'])  # 세 번째 페이지 실행
-    sleep(2)
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/third_page.py'])  # 세 번째 페이지 실행
+    sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/fourth_page.py'])  # 구매 페이지 실행
-    sleep(2)
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/fourth_page.py'])  # 구매 페이지 실행
+    sleep(1)
     window.destroy()
+
+def publish_order(menu_index):
+    # Initialize the ROS node (name it whatever you want)
+    rospy.init_node('order_publisher_node', anonymous=True)
     
+    # Create a publisher object, specify the topic name and the message type
+    order_pub = rospy.Publisher('/order', String, queue_size=10)
+    
+    # Wait for connections to establish (optional, for smooth operation)
+    rospy.sleep(1)
+    
+    # Publish a message (you can customize the message as needed)
+    order_msg = str(menu_index)
+    order_pub.publish(order_msg)
+    
+    # Ensure all ROS communication is complete before exiting (optional)
+    rospy.loginfo(f"Published message: {order_msg}")
+
+
 # 두 번째 페이지 구성
 def create_second_page():
     window = Tk()
@@ -167,7 +190,7 @@ def create_second_page():
         image=button_image_8,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: open_buy(window),  # 기존 창 닫고 구매 페이지로 이동
+        command=lambda: [open_buy(window), publish_order(menu2pub)] ,  # 기존 창 닫고 구매 페이지로 이동
         relief="flat"
     )
     button_8.place(
@@ -185,7 +208,7 @@ def create_second_page():
     )
 
     def print_menu(menu_num):
-        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/build/selected_menu.py', 'w') as file:
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/selected_menu.py', 'w') as file:
             file.write(f"menu2pub = [{menu_num}]\n")
             
         # price list 

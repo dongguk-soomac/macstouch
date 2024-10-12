@@ -1,1 +1,1 @@
-menu2pub = [1]
+menu2pub = [2]
