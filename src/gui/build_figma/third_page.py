@@ -1,0 +1,218 @@
+from tkinter import Tk, Canvas, Button, PhotoImage, Frame
+from pathlib import Path
+import second_page
+import subprocess
+from time import sleep
+
+# 경로 설정
+OUTPUT_PATH = Path(__file__).parent
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build/assets/frame0")
+
+def relative_to_assets_2(path: str) -> Path:
+    return ASSETS_PATH_2 / Path(path)
+
+def open_second_page(window):
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/second_page.py'])  # 세 번째 페이지 실행
+    sleep(2)
+    window.destroy()
+
+def open_buy(window):
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build/fourth_page.py'])  # 구매 페이지 실행
+    sleep(2)
+    window.destroy() 
+
+# 두 번째 페이지 구성
+def create_third_page():
+    window = Tk()
+    window.geometry("1080x1920")
+    window.configure(bg="#FFFFFF")
+
+    # 두 번째 페이지 Frame
+    page2 = Frame(window, bg="#FFFFFF")
+    page2.place(x=0, y=0, width=1080, height=1920)
+
+    canvas2 = Canvas(
+        page2,
+        bg="#FFFFFF",
+        height=1920,
+        width=1080,
+        bd=0,
+        highlightthickness=0,
+        relief="ridge"
+    )
+    canvas2.place(x=0, y=0)
+
+    # 두 번째 페이지 구성 요소
+    image_image_2 = PhotoImage(file=relative_to_assets_2("image_1.png"))
+    canvas2.create_image(
+        540.0,
+        1100.738525390625,
+        image=image_image_2
+    )
+
+    image_image_3 = PhotoImage(file=relative_to_assets_2("image_2.png"))
+    canvas2.create_image(
+        540.0,
+        1618.0,
+        image=image_image_3
+    )
+
+    image_image_4 = PhotoImage(file=relative_to_assets_2("image_3.png"))
+    canvas2.create_image(
+        540.0,
+        147.0,
+        image=image_image_4
+    )
+
+    button_image_2 = PhotoImage(file=relative_to_assets_2("button_1.png"))
+    button_2 = Button(
+        page2,
+        image=button_image_2,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: print("button_1 clicked"),
+        relief="flat"
+    )
+    button_2.place(
+        x=27.0,
+        y=316.0,
+        width=505.0,
+        height=502.0
+    )
+
+    button_image_3 = PhotoImage(file=relative_to_assets_2("button_2.png"))
+    button_3 = Button(
+        page2,
+        image=button_image_3,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: print("button_2 clicked"),
+        relief="flat"
+    )
+    button_3.place(
+        x=27.0,
+        y=831.0,
+        width=505.0,
+        height=502.0
+    )
+
+    button_image_4 = PhotoImage(file=relative_to_assets_2("button_3.png"))
+    button_4 = Button(
+        page2,
+        image=button_image_4,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: print("button_3 clicked"),
+        relief="flat"
+    )
+    button_4.place(
+        x=547.0,
+        y=831.0,
+        width=505.0,
+        height=502.0
+    )
+
+    button_image_5 = PhotoImage(file=relative_to_assets_2("button_4.png"))
+    button_5 = Button(
+        page2,
+        image=button_image_5,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: print("button_4 clicked"),
+        relief="flat"
+    )
+    button_5.place(
+        x=547.0,
+        y=316.0,
+        width=505.0,
+        height=502.0
+    )
+
+    button_image_6 = PhotoImage(file=relative_to_assets_2("button_5.png"))
+    button_6 = Button(
+        page2,
+        image=button_image_6,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: open_second_page(window),
+        relief="flat"
+    )
+    button_6.place(
+        x=114.0,
+        y=92.0,
+        width=360.0,
+        height=129.0
+    )
+
+    button_image_7 = PhotoImage(file=relative_to_assets_2("button_6.png"))
+    button_7 = Button(
+        page2,
+        image=button_image_7,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: print("button_6 clicked"),
+        relief="flat"
+    )
+    button_7.place(
+        x=587.0,
+        y=92.0,
+        width=371.0,
+        height=129.0
+    )
+
+    button_image_8 = PhotoImage(file=relative_to_assets_2("button_7.png"))
+    button_8 = Button(
+        page2,
+        image=button_image_8,
+        borderwidth=0,
+        highlightthickness=0,
+        command=lambda: open_buy(window),
+        relief="flat"
+    )
+    button_8.place(
+        x=673.0,
+        y=1760.0,
+        width=365.0,
+        height=120.0
+    )
+
+    image_image_5 = PhotoImage(file=relative_to_assets_2("image_4.png"))
+    canvas2.create_image(
+        542.0,
+        1561.0,
+        image=image_image_5
+    )
+
+    canvas2.create_text(
+        754.0,
+        1446.0,
+        anchor="nw",
+        text="메뉴 1",
+        fill="#000000",
+        font=("Inter", 24 * -1)
+    )
+
+    canvas2.create_text(
+        544.0,
+        1446.0,
+        anchor="nw",
+        text="메뉴 1",
+        fill="#000000",
+        font=("Inter", 24 * -1)
+    )
+
+    canvas2.create_text(
+        81.0,
+        1446.0,
+        anchor="nw",
+        text="메뉴 1",
+        fill="#000000",
+        font=("Inter", 24 * -1)
+    )
+
+    window.resizable(False, False)
+    window.mainloop()
+
+# 두 번째 페이지 생성 실행
+if __name__ == "__main__":
+    create_third_page()
