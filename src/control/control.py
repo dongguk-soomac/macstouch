@@ -102,10 +102,12 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
         rz, ry, rx = materail_coord[3:6] # from vision data
           
     if material_index == 7: # lettuce ### okay ###
-        z_offset_for_each_index = -10
+        z_offset_for_each_index = -13
+        
         # pick_coord[1] = -68.408
         # mode = int(mode)
         # pick_coord[0] = 694.5 - 40 - 42 * mode
+
         pick_coord[1] = 273.655
         mode = int(mode)
         pick_coord[0] = 694.5 - 40 - 42 * mode
@@ -132,10 +134,12 @@ class ManageCoord:
         self.bread_coord = coordinates_data["bread_coord"] # 초기 빵 좌표
         self.meat_coord = coordinates_data["meat_coord"] # 초기 빵 좌표
 
-        self.material_height = coordinates_data["material_height"] # place 높이 조절을 위한 재료 높이, 튜닝 필요
+        self.material_height = coordinates_data["material_height"] # plac/e 높이 조절을 위한 재료 높이, 튜닝 필요
         self.bread_offset = coordinates_data["bread_offset"] # 빵 간격, 튜닝 필요
         self.meat_offset = coordinates_data["meat_offset"] # 패티 간격, 튜닝 필요
-        self.bread_lid_coord = coordinates_data["bread_lid_coord"]        
+        self.bread_lid_coord = coordinates_data["bread_lid_coord"] # 빵 뚜껑이 보관될 위치
+        self.sauce_coord = coordinates_data["sauce_coord"]
+
 
         # 빵, 패티의 초기 index 설정
         self.bread_index = 0
@@ -187,18 +191,27 @@ class Control:
         global coordinates_data
         self.init_pos = coordinates_data["init_pos"]
         self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
-        self.vision_coord = coordinates_data["vision_coord"]
+        # self.vision_coord = coordinates_data["vision_coord"]
         tool_list = coordinates_data["tool_length"]
 
-        # tool에 따른 vision 좌표 보정
+        self.vision_coord = np.zeros((8, 6))
         for i in range(8):
-            self.vision_coord[i][0] += tool_list[i]
+            self.vision_coord[i][0] = 600 + tool_list[i]
+            self.vision_coord[i][1] = self.tool_coord[i][1]
+            self.vision_coord[i][3] = 438
+            self.vision_coord[i][4] = self.tool_coord[i][4]
+            self.vision_coord[i][5] = self.tool_coord[i][5]
+            self.vision_coord[i][6] = self.tool_coord[i][6]
+            
+            self.tool_coord[i][0] += 158.2        
+
         # ros setting
         rospy.Subscriber('/control_req', control_info, self.control_cb)
         rospy.Subscriber('/action_done', Bool, self.action_done_cb)
 
         self.action_req = rospy.Publisher('/action_req', action_info, queue_size=10)
         self.done = rospy.Publisher('/done', Bool, queue_size=10)
+        self.back_motion = False
 
         self.action_state = 0
         rospy.spin()
@@ -218,7 +231,7 @@ class Control:
         if self.mode == 'init_pos':
             if self.action_state == 1:
                 print('##### [Mode : init_pos] step_1 : init_pos action')
-                self.control_action_pub('init_pos', None, None, self.init_pos, None)     
+                self.control_action_pub('init_pos', None, None, self.init_pos, None, posture=6)     
                 self.action_state += 1
 
             elif self.action_state == 2:
@@ -233,7 +246,7 @@ class Control:
         elif self.mode == 'vision':
             if self.action_state == 1:
                 print('##### [Mode : vision] step_1 : vision action')
-                self.control_action_pub('vision', None, None, self.vision_coord[self.material], None) # material -> None / grip_size -< None            
+                self.control_action_pub('vision', None, None, self.vision_coord[self.material], None, posture=6) # material -> None / grip_size -< None            
                 self.action_state += 1
 
             elif self.action_state == 2:
@@ -244,20 +257,40 @@ class Control:
                 self.action_state += 1
             else:
                 pass                  
-        
-        elif self.mode == 'pnp':
-            if self.material != 5 and self.material != 2: # 치즈 및 소스가 아닌 일반 pnp
 
+        elif self.mode == 'pnp' and (self.material == 2 or self.material == 5): # sauce 동작
+            if self.action_state == 1: # pick 동작      
+                print('##### [Mode : pnp] step_1 : sauce pick action')
+                pick_coord = self.managecoord.sauce_coord    # mode에 따라 다른 소스 좌표로 변경하는 코드 추가                                    
+                print('Pick coord :', pick_coord)
+                self.control_action_pub('sauce_pick', None, None, pick_coord, None) # client에서는 grip_mode를 바탕으로 pick 동작 구분                                
+                self.action_state += 1
+
+            if self.action_state == 2: # place 동작
+                print('##### [Mode : pnp] step_2 : sauce place action') 
+                self.control_action_pub('sauce_place', None, None, self.managecoord.place_coord, None)
+                print('Place coord : ', self.managecoord.place_coord)
+                self.action_state += 1
+                self.managecoord.change_place_coord(self.material) # place 위치 상승
+
+            elif self.action_state == 3:
+                print('##### [Mode : pnp] step_4 : done')
+                msg = Bool()
+                msg.data = True
+                self.done.publish(msg)
+                self.action_state += 1  
+
+        elif self.mode == 'pnp': # pnp 동작["bread", "meat", "pickle", "onion", "tomato", "lettuce"]                            
                 if self.action_state == 1:
-                    if self.material != 0 and self.material != 1: ## vision 후 pnp 동작하는 재료에 대해서                   
-                        print('##### [Mode : pnp] step_0 : back action') 
-                        self.control_action_pub('back', None, None, None, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                    if self.material != 0 and self.material != 1: ## vision 후 pnp 동작하는 재료(pickle, onion, tomato, lettuce)                 
+                        print('##### [Mode : pnp] step_1 : back action') 
+                        self.control_action_pub('back', None, None, None, None)
                         self.action_state += 1
                     else:
                         self.action_state = 2              
 
-                if self.action_state == 2:
-                    # 좌표 설정
+                if self.action_state == 2: # pick 동작
+                    ### 좌표 설정
                     if self.material == 0: # bread : 고정 좌표
                         pick_coord = deepcopy(self.managecoord.bread_coord)
                         self.managecoord.change_bread_pick_coord()
@@ -269,47 +302,33 @@ class Control:
                     else: # 변동 좌표에 대한 pick_coord 설정
                         pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord), self.grip_mode)
 
-                    print('##### [Mode : pnp] step_1 : pick action')
+                    print('##### [Mode : pnp] step_2 : pick action')
                     print(pick_coord)
                     self.control_action_pub('pick', None, self.grip_mode, pick_coord, None, posture=6) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                     self.action_state += 1
                      
-                elif self.action_state == 3:  
+                elif self.action_state == 3: # place 동작
                     if self.material == 0: # bread일 때 place 동작 구분
-                        print('##### [Mode : pnp] step_2 : bread_place action') 
+                        print('##### [Mode : pnp] step_3 : bread_place action') 
                         self.control_action_pub('bread_place', self.material, None, self.managecoord.place_coord, self.managecoord.bread_lid_coord) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('##############', self.managecoord.place_coord)
+                        print('Place coord : ', self.managecoord.place_coord)
                         self.action_state += 1
                         self.managecoord.change_place_coord(self.material) # place 위치 상승
 
-                    # 토마토의 경우, 어디를 집었는지에 따라 위치 보정하는 코드 추가할 것.
+                    # 토마토, 피클의 경우, 어디를 집었는지에 따라 위치 보정하는 코드 추가할 것.
                     else:
-                        print('##### [Mode : pnp] step_2 : place action') 
+                        print('##### [Mode : pnp] step_3 : place action') 
                         self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('##############', self.managecoord.place_coord)
+                        print('Place coord : ', self.managecoord.place_coord)
                         self.action_state += 1
                         self.managecoord.change_place_coord(self.material) # place 위치 상승
-
 
                 elif self.action_state == 4:
-                    print('##### [Mode : pnp] step_3 : done')
+                    print('##### [Mode : pnp] step_4 : done')
                     msg = Bool()
                     msg.data = True
                     self.done.publish(msg)
                     self.action_state += 1  
-
-            # elif self.material == 5: # 소스인 경우
-            #     if self.action_state == 1:
-            #         print('##### [Mode : pnp] step_1 : sauce pick action')
-            #         pick_coord = self.managecoord.sauce_coord    # mode에 따라 다른 소스 좌표로 변경하는 코드 추가                                    
-            #         print(pick_coord)
-                    
-            #         self.control_action_pub('sauce_pick', None, None, pick_coord, None) # client에서는 grip_mode를 바탕으로 pick 동작 구분                                
-            #         self.action_state += 1
-
-
-            else:
-                pass                
 
         elif self.mode == 'tool_return':
             if self.action_state == 1:
