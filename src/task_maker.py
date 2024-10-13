@@ -19,20 +19,23 @@ class Task:
         return task
 
     def order_to_task(self, order):
-        # tasks = [self.templete[0]]
-        tasks = []
+        # order.append(1)
+        tasks = [self.templete[0]]
+        # tasks = []
+        
 
         for material, repeat in enumerate(order):
             if material == 0:
-                tool_get = self.make_task(1, material)
-                tasks.append(tool_get)
+                if repeat:
+                    tool_get = self.make_task(1, material)
+                    tasks.append(tool_get)
 
-                pnp = self.make_task(3, material)
-                tasks.append(pnp)
+                    pnp = self.make_task(3, material)
+                    tasks.append(pnp)
 
-                tool_return = self.make_task(4, material)
-                tasks.append(tool_return)
-
+                    tool_return = self.make_task(4, material)
+                    tasks.append(tool_return)
+                    
             elif material == 1 or material == 2 or material == 5:
                 if repeat:
                     tool_get = self.make_task(1, material)
@@ -60,6 +63,11 @@ class Task:
 
                     tool_return = self.make_task(4, material)
                     tasks.append(tool_return)
+
+            # 좌우 이동 시 꼬임 방지
+            if material == 1:
+                tasks.append(self.templete[0])
+
             
         # # bread
         # tool_get = self.make_task(1, 0)
@@ -73,6 +81,9 @@ class Task:
 
         # tool_return = self.make_task(4, 0)
         # tasks.append(tool_return)
+
+        # 좌우 이동 시 꼬임 방지
+        tasks.append(self.templete[0])
 
         finish = self.make_task(5, 0)
         tasks.append(finish)

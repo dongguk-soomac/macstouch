@@ -204,7 +204,7 @@ class Request:
                 step += 1
                 self.current_task = None
 
-        if step == len(self.task_list):
+        if step > len(self.task_list)-1:
             status = 'Done'
 
         return step, status
@@ -240,7 +240,8 @@ def main():
 
         step, status = req.task_control(step)
 
-        if status != 'done':
+        if status != 'Done':
+            print("현재 상태: ", status)
             print("현재 진행 중인 주문 : ", IngId)
             print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
 

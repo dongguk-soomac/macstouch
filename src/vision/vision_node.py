@@ -24,7 +24,7 @@ VisionClass = ["pickle", "tomato"]
 resolution_width, resolution_height = (1280,  720)
 
 # model_path = '/home/choiyj/catkin_ws/src/macstouch/src/vision/pt/tomatopicklemeat.pt'
-model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/zeus1.pt'
+model_path = '/home/mac/catkin_ws/src/macstouch/src/vision/pt/zeus2.pt'
 
 class Vision:
     def __init__(self) -> None:
@@ -70,6 +70,8 @@ class Vision:
         
         self.rotation = [[-45, 0, 180], [45, 0, 180], [135, 0, 180], [-135, 0, 180]]
 
+        self.case_roi = [(615, 70, 200, 200), (615, 420, 200, 200), (620, 340, 200, 20)]
+
     def vision_callback(self, msg):
         target_idx = msg.data
         target = MaterialList[target_idx]
@@ -113,6 +115,9 @@ class Vision:
                 mode, coord = self.depth_detection(target)
                 print('depth done')
                 valid = self.coord_check(target, coord)
+        elif target == 'case':
+            mode, coord = self.case_detection()
+            print('depth done')
         # else:
         #     while valid is False:
         #         mode, coord = 0, [coord[0], coord[1], coord[2], 0, 0, 0]
@@ -138,7 +143,7 @@ class Vision:
 
         _bbox = None
 
-        center_weight = 0
+        center_weight = 0.2
         z_weight = 1
 
         for result in results:
@@ -286,6 +291,63 @@ class Vision:
 
         return str(min_idx), [0, 0, min_depth*0.1]
     
+    def case_detection(self):
+        annotated_color = self.color_frame.copy()
+        annotated_depth = self.depth_image.copy()
+
+        lab = cv2.cvtColor(annotated_color, cv2.COLOR_BGR2LAB)
+        l, a, b = cv2.split(lab)
+
+        clahe = cv2.createCLAHE(clipLimit=5.0, tileGridSize=(4, 4))
+        l = clahe.apply(l)
+        lab = cv2.merge([l, a, b])
+        contdst = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
+        blurred = cv2.GaussianBlur(contdst, (3, 3), 0)
+        canny = cv2.Canny(blurred, 50, 100)
+        cv2.imshow('Canny', canny)
+
+        roi1 = self.case_roi[0]  # (x, y, width, height)
+        roi2 = self.case_roi[1]
+
+        cv2.rectangle(annotated_color, (roi1[0], roi1[1]), (roi1[0]+roi1[2], roi1[1]+roi1[3]), (255, 0, 0), 2)
+        cv2.rectangle(annotated_color, (roi2[0], roi2[1]), (roi2[0]+roi2[2], roi2[1]+roi2[3]), (255, 0, 0), 2)
+
+        points_in_roi1 = 0
+        points_in_roi2 = 0
+
+        x, y, w, h = roi1
+        canny_roi1 = canny[y:y+h, x:x+w]
+        points_in_roi1 = np.sum(canny_roi1 == 255)
+
+        x, y, w, h = roi2
+        canny_roi2 = canny[y:y+h, x:x+w]
+        points_in_roi2 = np.sum(canny_roi2 == 255)
+
+
+        x, y, w, h = self.case_roi[2]
+        roi_depth = annotated_depth[y:y+h, x:x+w]
+        mean_depth = 0
+
+        # ROI 내 유효한 뎁스 값 필터링
+        valid_depth = roi_depth[roi_depth > 0]  # 유효한 뎁스 값만 사용 (0은 무효한 값)
+
+        # ROI의 평균 뎁스 계산
+        if len(valid_depth) > 0:
+            mean_depth = np.mean(valid_depth)
+        else:
+            print("ROI 내 유효한 뎁스 값이 없습니다.")
+
+        cv2.rectangle(annotated_color, (x, y), (x+w, y+h), (150, 150, 0), 2)  # ROI 사각형 그리기
+        cv2.putText(annotated_color, "{}".format(points_in_roi1), (int(roi1[0] + roi1[2]/2), int(roi1[1] + roi1[3]/2)), 0, 1.0, (0, 255, 255), 2)
+        cv2.putText(annotated_color, "{}".format(points_in_roi2), (int(roi2[0] + roi2[2]/2), int(roi2[1] + roi2[3]/2)), 0, 1.0, (0, 255, 255), 2)
+
+        self.yolo_color = annotated_color
+        self.yolo_depth = annotated_depth
+
+
+        return 'left' if points_in_roi1 > points_in_roi2 else 'right', [0, 0, mean_depth, 0, 0, 0]
+
+    
     def pub(self, target, mode, grip_pos, size):
         data = vision_info()
         data.material = target
@@ -310,7 +372,7 @@ def main():
         vision.depth_frame = depth_raw_frame.as_depth_frame()
         vision.depth_image = np.asanyarray(depth_raw_frame.get_data())
 
-        # vision.detection('onion')
+        # vision.detection('case')
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.15), cv2.COLORMAP_JET)
         yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.15), cv2.COLORMAP_JET)
         

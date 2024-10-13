@@ -26,7 +26,7 @@ try:
         depth_frame = np.asanyarray(depth_raw_frame.get_data())
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_frame, alpha=0.08), cv2.COLORMAP_JET)
 
-        cv2.imshow('RealSense Camera', depth_colormap)
+        cv2.imshow('RealSense Camera', color_frame)
 
         key = cv2.waitKey(1)
         if key == ord(' '):  # 스페이스바를 누르면 이미지 저장
