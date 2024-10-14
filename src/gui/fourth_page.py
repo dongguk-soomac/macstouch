@@ -4,6 +4,9 @@ import second_page
 import os
 import subprocess
 from time import sleep
+import rospy
+from std_msgs.msg import String
+from selected_menu import menu_index
 
 
 # 경로 설정
@@ -17,8 +20,18 @@ def relative_to_assets(path: str) -> Path:
 global images
 images = {}
 
+def publish_order(menu_indx):
+    rospy.init_node('order_publisher_node', anonymous=True)
+    
+    order_pub = rospy.Publisher('/menu_index', String, queue_size=10)
+    rospy.sleep(1)
+    order_msg = str(menu_indx)
+    order_pub.publish(order_msg)
+    
+    rospy.loginfo(f"Published message: {order_msg}")
+
 def open_first_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/first_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/first_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
@@ -71,3 +84,4 @@ def create_fourth_page():
 # 첫 번째 페이지 생성 실행
 if __name__ == "__main__":
     create_fourth_page()
+    publish_order(menu_index)
