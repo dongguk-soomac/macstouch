@@ -29,23 +29,23 @@ def open_buy(window):
     sleep(1)
     window.destroy()
 
-def publish_order(menu_index):
-    # Initialize the ROS node (name it whatever you want)
-    rospy.init_node('order_publisher_node', anonymous=True)
+# def publish_order(menu_index):
+#     # Initialize the ROS node (name it whatever you want)
+#     rospy.init_node('order_publisher_node', anonymous=True)
     
-    # Create a publisher object, specify the topic name and the message type
-    order_pub = rospy.Publisher('/menu_index', String, queue_size=10)
+#     # Create a publisher object, specify the topic name and the message type
+#     order_pub = rospy.Publisher('/menu_index', String, queue_size=10)
     
-    # Wait for connections to establish (optional, for smooth operation)
-    rospy.sleep(1)
+#     # Wait for connections to establish (optional, for smooth operation)
+#     rospy.sleep(1)
     
-    # Publish a message (you can customize the message as needed)
-    order_msg = str(menu_index)
-    order_pub.publish(order_msg)
-    print(menu_index)
+#     # Publish a message (you can customize the message as needed)
+#     order_msg = str(menu_index)
+#     order_pub.publish(order_msg)
+#     print(menu_index)
     
-    # Ensure all ROS communication is complete before exiting (optional)
-    rospy.loginfo(f"Published message: {order_msg}")
+#     # Ensure all ROS communication is complete before exiting (optional)
+#     rospy.loginfo(f"Published message: {order_msg}")
 
 
 # 두 번째 페이지 구성

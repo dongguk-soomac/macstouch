@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 from tkinter import Tk, Canvas, Button, PhotoImage, Frame
 from pathlib import Path
 import second_page
@@ -18,7 +20,7 @@ def relative_to_assets(path: str) -> Path:
 
 # 이미지 객체를 전역 변수로 유지
 global images
-images = {}
+images = {} 
 
 def publish_order(menu_indx):
     rospy.init_node('order_publisher_node', anonymous=True)
