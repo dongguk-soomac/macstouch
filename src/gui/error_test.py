@@ -7,7 +7,7 @@ from std_msgs.msg import String
 rospy.init_node('error_publisher', anonymous=True)
 
 # Publisher 설정
-pub = rospy.Publisher('/error', String, queue_size=10)
+pub = rospy.Publisher('/error_info', String, queue_size=10)
 
 # 메시지를 주기적으로 publish하는 함수
 def publish_error_message():

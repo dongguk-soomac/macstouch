@@ -37,6 +37,14 @@ def menu_callback(data):
         order_msg.menu = [2, 1, 1, 3, 8, 1, 1, 3]  # 치즈 버거
     elif menu_index == "[3]":
         order_msg.menu = [2, 1, 2, 3, 8, 1, 1, 3]  # 더블 치즈 버거
+    elif menu_index == "[4]":
+        order_msg.menu = [2, 1, 0, 3, 8, 1, 1, 3]  # 불고기 버거
+    elif menu_index == "[5]":
+        order_msg.menu = [2, 0, 0, 3, 8, 1, 1, 3]  # 제로 버거
+    elif menu_index == "[6]":
+        order_msg.menu = [2, 1, 1, 3, 8, 1, 1, 3]  # 치즈 버거
+    elif menu_index == "[7]":
+        order_msg.menu = [2, 1, 2, 3, 8, 1, 1, 3]  # 더블 치즈 버거
     else:
         rospy.logwarn("Invalid menu index received!")
         return
@@ -50,7 +58,7 @@ def listener_and_publisher():
 
     # 퍼블리셔 생성: /order 토픽에 order 메시지 퍼블리시
     global order_pub
-    order_pub = rospy.Publisher('/order', order, queue_size=10)
+    order_pub = rospy.Publisher('/id_order', order, queue_size=10)
 
     # 서브스크라이버 생성: /menu_index 토픽을 구독
     rospy.Subscriber('/menu_index', String, menu_callback)
