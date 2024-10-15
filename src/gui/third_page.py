@@ -10,6 +10,19 @@ from std_msgs.msg import String
 from selected_menu import menu_index
 # from macstouch.msg import order
 
+#변수 선언
+tempo_menu = []
+
+price_text_id = None
+num_text_id = None
+menu_text_id = None
+total_text_id = None
+
+menu_y_position = 1446.0  # 메뉴가 출력될 y 좌표의 시작 위치
+menu_offset = 30
+max_menu_limit = 9
+
+
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
@@ -29,25 +42,6 @@ def open_buy(window):
     sleep(1)
     window.destroy() 
 
-# def publish_order(menu_index):
-#     # Initialize the ROS node (name it whatever you want)
-#     rospy.init_node('order_publisher_node', anonymous=True)
-    
-#     # Create a publisher object, specify the topic name and the message type
-#     order_pub = rospy.Publisher('/menu_index', String, queue_size=10)
-    
-#     # Wait for connections to establish (optional, for smooth operation)
-#     rospy.sleep(1)
-    
-#     # Publish a message (you can customize the message as needed)
-#     order_msg = str(menu_index)
-#     order_pub.publish(order_msg)
-    
-#     # Ensure all ROS communication is complete before exiting (optional)
-#     rospy.loginfo(f"Published message: {order_msg}")
-
-
-# 두 번째 페이지 구성
 def create_third_page():
     window = Tk()
     window.geometry("1080x1920")
@@ -96,7 +90,7 @@ def create_third_page():
         image=button_image_2,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: [print_menu(0), print("button2")],
+        command=lambda: [print_menu(4), print("button2")],
         relief="flat"
     )
     button_2.place(
@@ -112,7 +106,7 @@ def create_third_page():
         image=button_image_3,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: [print_menu(1), print("button3")],
+        command=lambda: [print_menu(5), print("button3")],
         relief="flat"
     )
     button_3.place(
@@ -128,7 +122,7 @@ def create_third_page():
         image=button_image_4,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: [print_menu(2), print("button4")],
+        command=lambda: [print_menu(6), print("button4")],
         relief="flat"
     )
     button_4.place(
@@ -144,7 +138,7 @@ def create_third_page():
         image=button_image_5,
         borderwidth=0,
         highlightthickness=0,
-        command=lambda: [print_menu(3), print("button5")],
+        command=lambda: [print_menu(7), print("button5")],
         relief="flat"
     )
     button_5.place(
@@ -210,11 +204,24 @@ def create_third_page():
     )
 
     def print_menu(menu_num):
+        global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
+        global max_menu_limit, menu_offset, menu_y_position
+
+        tempo_menu.append(price_list[menu_num])
+        print(tempo_menu)
+        # canvas2.delete()
+
+        if len(tempo_menu) > max_menu_limit:
+            print("최대 메뉴 개수(8개)를 초과할 수 없습니다.")
+            return
+        
+        if total_text_id:
+            canvas2.delete(total_text_id)
             
         # price list 
-        canvas2.create_text(
+        price_text_id = canvas2.create_text(
             754.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text=price_list[menu_num],
             fill="#000000",
@@ -222,9 +229,9 @@ def create_third_page():
         )
 
         # num
-        canvas2.create_text(
+        num_text_id = canvas2.create_text(
             544.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text='1',
             fill="#000000",
@@ -232,16 +239,28 @@ def create_third_page():
         )
 
         # menu list
-        canvas2.create_text(
+        menu_text_id = canvas2.create_text(
             81.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text=menu_list[menu_num],
             fill="#000000",
             font=("Inter", 24 * -1)
         )
+
+        total_text_id = canvas2.create_text(
+            81.0,
+            1800.0,
+            anchor="nw",
+            text="합계 : {}원".format(sum(tempo_menu)),
+            fill="#000000",
+            font=("Inter", 35 * -1)
+        )
+        
         with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
             file.write(f"menu_index = [{menu_num}]\n")
+
+            menu_y_position += menu_offset
 
     window.resizable(False, False)
     window.mainloop()

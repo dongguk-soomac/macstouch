@@ -13,7 +13,7 @@ def callback(msg):
     rospy.loginfo(f"Received: {msg.data}")
 
 # ROS 구독자 설정: '/error' 토픽을 구독
-sub = rospy.Subscriber('/order', String, callback)
+sub = rospy.Subscriber('/id_order', String, callback)
 
 # ROS 스핀을 계속해서 돌려 메시지 처리
 rospy.spin()

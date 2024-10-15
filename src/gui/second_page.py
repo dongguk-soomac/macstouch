@@ -8,6 +8,17 @@ import rospy
 from std_msgs.msg import String
 from selected_menu import menu_index
 
+tempo_menu = []
+
+price_text_id = None
+num_text_id = None
+menu_text_id = None
+total_text_id = None
+
+menu_y_position = 1446.0  # 메뉴가 출력될 y 좌표의 시작 위치
+menu_offset = 30
+
+max_menu_limit = 9
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
@@ -211,14 +222,23 @@ def create_second_page():
     )
 
     def print_menu(menu_num):
-        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
-            file.write(f"menu_index = [{menu_num}]\n")
-            file.close()
+        global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
+        global menu_offset, menu_y_position
+
+        tempo_menu.append(price_list[menu_num])
+        print(tempo_menu)
+
+        if len(tempo_menu) > max_menu_limit:
+            print("최대 메뉴 개수(8개)를 초과할 수 없습니다.")
+            return
+
+        if total_text_id:
+            canvas2.delete(total_text_id)
             
         # price list 
         canvas2.create_text(
             754.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text=price_list[menu_num],
             fill="#000000",
@@ -228,7 +248,7 @@ def create_second_page():
         # num
         canvas2.create_text(
             544.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text='1',
             fill="#000000",
@@ -238,12 +258,28 @@ def create_second_page():
         # menu list
         canvas2.create_text(
             81.0,
-            1446.0,
+            menu_y_position,
             anchor="nw",
             text=menu_list[menu_num],
             fill="#000000",
             font=("Inter", 24 * -1)
         )
+
+        menu_y_position += menu_offset
+        
+        #합계
+        total_text_id = canvas2.create_text(
+            81.0,
+            1800.0,
+            anchor="nw",
+            text="합계 : {}원".format(sum(tempo_menu)),
+            fill="#000000",
+            font=("Inter", 35 * -1)
+        )
+
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+            file.write(f"menu_index = [{menu_num}]\n")
+            file.close()
 
     window.resizable(False, False)
     window.mainloop()
