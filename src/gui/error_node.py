@@ -11,7 +11,7 @@ error_complete_pub = rospy.Publisher('/error_complete', String, queue_size=10)  
 
 def publish_error_complete():
     # "/error_complete" 토픽에 "error_complete" 메시지를 발행하는 함수
-    message = "error_complete"
+    message = True 
     rospy.loginfo(f"Publishing: {message}")
     error_complete_pub.publish(message)
 
