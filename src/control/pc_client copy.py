@@ -38,15 +38,20 @@ class Action:
         self.tool_pos = coordinates_data["tool_coord"]
 
         ## offset
-        # pick and place offset
-        self.pnp_offset_up = [0, 0, 200, 0, 0, 0]
-        self.pnp_offset_down = [0, 0, -200, 0, 0, 0]
-        self.pnp_offset_back = [-100, 0, 0, 0, 0, 0]
+        # pick offset
+        self.pick_offset_up = [0, 0, 200, 0, 0, 0]
+        self.pick_offset_down = [0, 0, -200, 0, 0, 0]
+        self.pick_offset_back = [-100, 0, 0, 0, 0, 0]
 
-        self.tool_offset_forward = [200, 0, 0, 0, 0, 0]
-        self.tool_offset_backward = [-200, 0, 0, 0, 0, 0]
-        self.tool_offset_upward = [0, 0, 100, 0, 0, 0]
-        self.tool_offset_downward = [0, 0, -100, 0, 0, 0]
+        # place offset
+        self.place_offset_up = [0, 0, 100, 0, 0, 0]
+        self.place_offset_down = [0, 0, -100, 0, 0, 0]
+        self.place_offset_back = [-100, 0, 0, 0, 0, 0]
+
+        self.tool_offset_forward = [250, 0, 0, 0, 0, 0]
+        self.tool_offset_backward = [-250, 0, 0, 0, 0, 0]
+        self.tool_offset_upward = [0, 0, 150, 0, 0, 0]
+        self.tool_offset_downward = [0, 0, -150, 0, 0, 0]
 
         # for 빵 뚜껑 집기
         self.bread_offset_up = [0, 0, 0, 0, 0, 0]
@@ -200,18 +205,18 @@ class Action:
         # 2-1. 그리퍼
         setdata1 = self.make_str("Gripper", True)
         # 2-2. "재료 위치 + 오프셋"으로 이동
-        offset_point = self.list_add(material_coord, self.pnp_offset_up)
+        offset_point = self.list_add(material_coord, self.pick_offset_up)
         offset_point.append(posture)
         setdata2 = self.make_str("MovePoint", self.format_array(offset_point))
             
         # 2-3. 재료 위치로 이동 (오프셋만큼 이동)
-        setdata3 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata3 = self.make_str("MoveOffset", self.format_array(self.pick_offset_down))
 
         # 3. gripper
         setdata4 = self.make_str("Gripper", False)
 
         # 4. 오프셋
-        offset_point_2 = self.list_add(after_pick, self.pnp_offset_up)
+        offset_point_2 = self.list_add(after_pick, self.pick_offset_up)
         offset_point_2.append(posture)
         setdata5 = self.make_str("MovePoint", self.format_array(offset_point_2))
 
@@ -219,33 +224,33 @@ class Action:
         socke.send_data(setdata)
     
     def action_back(self):        
-        setdata = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
+        setdata = self.make_str("MoveOffset", self.format_array(self.pick_offset_back))
         socke.send_data(setdata)
 
     def action_place(self, place_coord, posture):
 
         # 1. "오프셋"으로 이동
-        offset_point = self.list_add(place_coord, self.pnp_offset_up)
+        offset_point = self.list_add(place_coord, self.place_offset_up)
         offset_point.append(posture)
         setdata1 = self.make_str("MovePoint", self.format_array(offset_point))
         # 2. 버거 위치로 이동
-        setdata2 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata2 = self.make_str("MoveOffset", self.format_array(self.place_offset_down))
         # 3. 그리퍼
         setdata3 = self.make_str("Gripper", True)
         # 4. 오프셋 위로 이동
-        setdata4 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))
+        setdata4 = self.make_str("MoveOffset", self.format_array(self.place_offset_up))
 
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4])
         socke.send_data(setdata)
 
     def action_bread_place(self, place_coord, bread_lib_coord, posture):
         # 1. "오프셋"으로 이동
-        offset_point = self.list_add(place_coord, self.pnp_offset_up)
+        offset_point = self.list_add(place_coord, self.place_offset_up)
         offset_point.append(posture)
         setdata1 = self.make_str("MovePoint", self.format_array(offset_point))
 
         # 2. 버거 위치로 이동
-        setdata2 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata2 = self.make_str("MoveOffset", self.format_array(self.place_offset_down))
 
         # 3. 그리퍼 open
         setdata3 = self.make_str("Gripper", True)
@@ -257,22 +262,22 @@ class Action:
         setdata5 = self.make_str("Gripper", False)       
          
         # 6. 오프셋 위로 이동
-        setdata6 = self.make_str("MoveOffset", self.format_array(self.list_add(self.pnp_offset_up, self.bread_offset_down)))
+        setdata6 = self.make_str("MoveOffset", self.format_array(self.list_add(self.place_offset_up, self.bread_offset_down)))
         
         # 7. 버거 뚜껑이 위치할 좌표 위로 이동
 
-        offset_point_2 = self.list_add(bread_lib_coord, self.pnp_offset_up)
+        offset_point_2 = self.list_add(bread_lib_coord, self.place_offset_up)
         offset_point_2.append(posture)
         setdata7 = self.make_str("MovePoint", self.format_array(offset_point_2))
 
         # 8. bread_lib 위치로 이동
-        setdata8 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata8 = self.make_str("MoveOffset", self.format_array(self.place_offset_down))
         
         # 9. 그리퍼 open
         setdata9 = self.make_str("Gripper", True)
 
         # 10. 오프셋 위로 이동
-        setdata10 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))                
+        setdata10 = self.make_str("MoveOffset", self.format_array(self.place_offset_up))                
 
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9, setdata10])
         socke.send_data(setdata)
@@ -282,28 +287,28 @@ class Action:
         setdata1 = self.make_str("Gripper", True)
         
         # 2. "재료 위치 + 오프셋"으로 이동
-        setdata2 = self.make_str("MovePoint", self.format_array(self.list_add(bread_coord, self.pnp_offset_up)))
+        setdata2 = self.make_str("MovePoint", self.format_array(self.list_add(bread_coord, self.pick_offset_up)))
             
         # 3. 재료 위치로 이동 (오프셋만큼 이동)
-        setdata3 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata3 = self.make_str("MoveOffset", self.format_array(self.pick_offset_down))
 
         # 4. 그리퍼 닫기
         setdata4 = self.make_str("Gripper", False)
 
         # 5. 오프셋 위로 이동
-        setdata5 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))
+        setdata5 = self.make_str("MoveOffset", self.format_array(self.place_offset_up))
 
         # 6. place위치 + offset 위로 이동
-        setdata6 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord, self.pnp_offset_up)))
+        setdata6 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord, self.place_offset_up)))
         
         # 7. 버거 위치로 이동
-        setdata7 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+        setdata7 = self.make_str("MoveOffset", self.format_array(self.place_offset_down))
 
         # 8. 그리퍼 열기
         setdata8 = self.make_str("Gripper", True)
 
         # 9. 오프셋 위로 이동
-        setdata9 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))
+        setdata9 = self.make_str("MoveOffset", self.format_array(self.place_offset_up))
 
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9])
         socke.send_data(setdata)    
@@ -333,7 +338,7 @@ class Action:
 
     def action_sauce_place(self, place_coord, posture):
         # 소스 위치 + 오프셋 이동
-        setdata1 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord+self.pnp_offset_up)))
+        setdata1 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord+self.place_offset_up)))
 
         # 소스 도포 위치로 이동
         setdata2 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord + self.sauce_offset_upward)))
@@ -356,7 +361,7 @@ class Action:
         setdata11 = self.make_str("MovePoint", self.format_array(sauce_circle[7]))                                          
         setdata12 = self.make_str("MovePoint", self.format_array(sauce_circle[0]))
 
-        setdata13 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord + self.pnp_offset_up)))
+        setdata13 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord + self.place_offset_up)))
 
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9, setdata10, setdata11, setdata12, setdata13])        
         socke.send_data(setdata) 
