@@ -30,21 +30,21 @@ def menu_callback(data):
 
     # menu_index 값에 따라 menu 리스트 할당
     if menu_index == "[0]":
-        order_msg.menu = [2, 1, 0, 3, 8, 1, 1, 3]  # 불고기 버거
+        order_msg.menu = [2, 1, 0, 3, 1, 1, 1, 3]  # 불고기 버거
     elif menu_index == "[1]":
-        order_msg.menu = [2, 0, 0, 3, 8, 1, 1, 3]  # 제로 버거
+        order_msg.menu = [2, 0, 0, 3, 1, 1, 1, 3]  # 제로 버거
     elif menu_index == "[2]":
-        order_msg.menu = [2, 1, 1, 3, 8, 1, 1, 3]  # 치즈 버거
+        order_msg.menu = [2, 1, 1, 3, 1, 1, 1, 3]  # 치즈 버거
     elif menu_index == "[3]":
-        order_msg.menu = [2, 1, 2, 3, 8, 1, 1, 3]  # 더블 치즈 버거
+        order_msg.menu = [2, 1, 2, 3, 1, 1, 1, 3]  # 더블 치즈 버거
     elif menu_index == "[4]":
-        order_msg.menu = [2, 1, 0, 3, 8, 1, 1, 3]  # 불고기 버거
+        order_msg.menu = [2, 1, 0, 3, 1, 1, 1, 3]  # 불고기 버거
     elif menu_index == "[5]":
-        order_msg.menu = [2, 0, 0, 3, 8, 1, 1, 3]  # 제로 버거
+        order_msg.menu = [2, 0, 0, 3, 1, 1, 1, 3]  # 제로 버거
     elif menu_index == "[6]":
-        order_msg.menu = [2, 1, 1, 3, 8, 1, 1, 3]  # 치즈 버거
+        order_msg.menu = [2, 1, 1, 3, 1, 1, 1, 3]  # 치즈 버거
     elif menu_index == "[7]":
-        order_msg.menu = [2, 1, 2, 3, 8, 1, 1, 3]  # 더블 치즈 버거
+        order_msg.menu = [2, 1, 2, 3, 1, 1, 1, 3]  # 더블 치즈 버거
     else:
         rospy.logwarn("Invalid menu index received!")
         return

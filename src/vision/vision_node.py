@@ -93,7 +93,7 @@ class Vision:
                 detected, centers, center_xy, bbox, coord = self.yolo_detection()
                 print('yolo done')
                 if detected:
-                    mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    mode, coord, size = self.grip_detection(target, centers, center_xy, bbox, coord)
                     print('grip done')
                     valid = self.coord_check(target, coord)
         elif target == 'pickle':
@@ -101,7 +101,7 @@ class Vision:
                 detected, centers, center_xy, bbox, coord = self.yolo_detection()
                 print('yolo done')
                 if detected:
-                    mode, coord = self.grip_detection(target, centers, center_xy, bbox, coord)
+                    mode, coord, size = self.grip_detection(target, centers, center_xy, bbox, coord)
                     print('grip done')
                     valid = self.coord_check(target, coord)
                     print('valid ', valid)
@@ -247,7 +247,7 @@ class Vision:
         ry = self.rotation[selected_idx][1]
         rx = self.rotation[selected_idx][2]
         
-        return str(selected_idx), [wx, wy, wz, rz, ry, rx]
+        return str(selected_idx), [wx, wy, wz, rz, ry, rx], w/2
     
     def depth_detection(self, target):
         annotated_color = self.color_frame.copy()

@@ -139,7 +139,11 @@ class ManageCoord:
 
         # 빵, 패티의 초기 index 설정
         self.bread_index = 0
-        self.meat_index = 0        
+        self.meat_index = 0     
+
+        # 토마토, 피클의 place 위치 보정
+        self.tomato_offset = 20
+        self.pickle_offset = 5
         
     def change_bread_pick_coord(self):
         self.bread_index += 1
@@ -173,6 +177,17 @@ class ManageCoord:
         self.meat_index = 0        
         self.meat_coord = coordinates_data["meat_coord"] # 초기 빵 좌표
 
+    def tomato_place(self):
+        tomato_place_coord = deepcopy(self.place_coord)
+        tomato_place_coord[0] -= self.tomato_offset
+        return tomato_place_coord 
+    
+    def pickle_place(self):
+        pickle_place_coord = deepcopy(self.place_coord)
+        pickle_place_coord[0] -= self.pickle_offset
+        return pickle_place_coord     
+        
+            
 
 class Control:
     def __init__(self) -> None:
@@ -218,7 +233,7 @@ class Control:
         self.material = data.material
         self.grip_mode = data.grip_mode
         self.coord = data.coord
-        self.grip_size = data.grip_size
+        self.size = data.size
         self.action_state = 1
         self.action()
 
@@ -315,6 +330,7 @@ class Control:
                         print('Place coord : ', self.managecoord.place_coord)
                         self.action_state += 1
                         self.managecoord.change_place_coord(self.material) # place 위치 상승
+                        
                     elif self.material == 1:
                         print('##### [Mode : pnp] step_3 : place action') 
                         self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None, posture=6) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
@@ -323,6 +339,21 @@ class Control:
                         self.managecoord.change_place_coord(self.material) # place 위치 상승
 
                     # 토마토, 피클의 경우, 어디를 집었는지에 따라 위치 보정하는 코드 추가할 것.
+                    
+                    elif self.material == 3: 
+                        print('##### [Mode : pnp] step_3 : place action') 
+                        self.control_action_pub('place', self.material, None, self.managecoord.pickle_place(), None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                        print('Place coord : ', self.managecoord.pickle_place())
+                        self.action_state += 1
+                        self.managecoord.change_place_coord(self.material) # place 위치 상승
+
+                    elif self.material == 6:  
+                        print('##### [Mode : pnp] step_3 : place action') 
+                        self.control_action_pub('place', self.material, None, self.managecoord.tomato_place(), None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                        print('Place coord : ', self.managecoord.tomato_place())
+                        self.action_state += 1
+                        self.managecoord.change_place_coord(self.material) # place 위치 상승
+                                                                
                     else: # 빵 잘되면 패티도 6번으로 
                         print('##### [Mode : pnp] step_3 : place action') 
                         self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    

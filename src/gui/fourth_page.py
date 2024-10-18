@@ -13,7 +13,7 @@ from selected_menu import menu_index
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame2")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame2")
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH_1 / Path(path)
@@ -25,15 +25,15 @@ images = {}
 def publish_order(menu_indx):
     rospy.init_node('order_publisher_node', anonymous=True)
     
-    order_pub = rospy.Publisher('/menu_index', String, queue_size=10)
-    rospy.sleep(1)
+    order_pub = rospy.Publisher('/menu_index', String, queue_size=10, latch=True)
+    # rospy.sleep(1)
     order_msg = str(menu_indx)
     order_pub.publish(order_msg)
     
     rospy.loginfo(f"Published message: {order_msg}")
 
 def open_first_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/first_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/first_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
@@ -85,5 +85,5 @@ def create_fourth_page():
 
 # 첫 번째 페이지 생성 실행
 if __name__ == "__main__":
-    create_fourth_page()
     publish_order(menu_index)
+    create_fourth_page()
