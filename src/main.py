@@ -127,21 +127,21 @@ class Request:
             request.material = -1
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 30
+            request.size = 30
 
         elif mode == 'tool_get': # tool_get
             request.mode = mode
             request.material = material
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
 
         elif mode == 'vision': # vision
             request.mode = mode
             request.material = material
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
 
 
         elif mode == 'pnp': # pnp
@@ -149,21 +149,21 @@ class Request:
             request.material = material
             request.grip_mode = grip_mode
             request.coord = coord
-            request.grip_size = 30
+            request.size = OrderList[0].menu[3]
 
         elif mode == 'tool_return': # tool_return
             request.mode = mode
             request.material = material
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
 
         elif mode == 'finish': # finish
             request.mode = mode
             request.material = 0
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
 
         self.control_pub.publish(request)
 
