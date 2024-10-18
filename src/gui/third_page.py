@@ -22,6 +22,7 @@ menu_y_position = 1446.0  # 메뉴가 출력될 y 좌표의 시작 위치
 menu_offset = 30
 max_menu_limit = 9
 
+custum_menu_list = []
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
@@ -205,7 +206,9 @@ def create_third_page():
 
     def print_menu(menu_num):
         global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
-        global max_menu_limit, menu_offset, menu_y_position
+        global max_menu_limit, menu_offset, menu_y_position, custum_menu_list
+
+        custum_menu_list.append(menu_num)
 
         tempo_menu.append(price_list[menu_num])
         print(tempo_menu)
@@ -256,9 +259,9 @@ def create_third_page():
             fill="#000000",
             font=("Inter", 35 * -1)
         )
-        
-        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
-            file.write(f"menu_index = [{menu_num}]\n")
+
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+            file.write(f"menu_index = {custum_menu_list}\n")
 
             menu_y_position += menu_offset
 
