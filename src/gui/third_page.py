@@ -9,6 +9,7 @@ import rospy
 from std_msgs.msg import String
 from selected_menu import menu_index
 # from macstouch.msg import order
+from PIL import Image, ImageTk
 
 #변수 선언
 tempo_menu = []
@@ -42,6 +43,14 @@ def open_buy(window):
     subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
     sleep(1)
     window.destroy() 
+
+def resize_image(image_path, scale=2/3):
+    """이미지의 크기를 scale 비율만큼 줄임"""
+    img = Image.open(image_path)
+    new_size = (int(img.width * scale), int(img.height * scale))
+    img = img.resize(new_size, Image.ANTIALIAS)
+    return ImageTk.PhotoImage(img)
+
 
 def create_third_page():
     window = Tk()
@@ -85,69 +94,51 @@ def create_third_page():
         image=image_image_4
     )
 
-    button_image_2 = PhotoImage(file=relative_to_assets_2("button_1.png"))
-    button_2 = Button(
-        page2,
-        image=button_image_2,
-        borderwidth=0,
-        highlightthickness=0,
-        command=lambda: [print_menu(4), print("button2")],
-        relief="flat"
-    )
-    button_2.place(
-        x=27.0,
-        y=316.0,
-        width=505.0,
-        height=502.0
-    )
+    ########################## 햄버거 재료 버튼 ###############################
 
-    button_image_3 = PhotoImage(file=relative_to_assets_2("button_2.png"))
-    button_3 = Button(
-        page2,
-        image=button_image_3,
-        borderwidth=0,
-        highlightthickness=0,
-        command=lambda: [print_menu(5), print("button3")],
-        relief="flat"
-    )
-    button_3.place(
-        x=27.0,
-        y=831.0,
-        width=505.0,
-        height=502.0
-    )
+    # 이미지 리사이즈 (2/3 크기)
+    button_image = resize_image(relative_to_assets_2("button_1.png"))
 
-    button_image_4 = PhotoImage(file=relative_to_assets_2("button_3.png"))
-    button_4 = Button(
-        page2,
-        image=button_image_4,
-        borderwidth=0,
-        highlightthickness=0,
-        command=lambda: [print_menu(6), print("button4")],
-        relief="flat"
-    )
-    button_4.place(
-        x=547.0,
-        y=831.0,
-        width=505.0,
-        height=502.0
-    )
+    # 버튼 크기 및 배치 설정
+    button_width = 340  # 버튼 너비 (화면 크기에 맞춰 조정)
+    button_height = 335  # 버튼 높이 (화면 크기에 맞춰 조정)
+    padding_x = 30  # 좌우 여백
+    padding_y = 30  # 위아래 여백
 
-    button_image_5 = PhotoImage(file=relative_to_assets_2("button_4.png"))
-    button_5 = Button(
-        page2,
-        image=button_image_5,
-        borderwidth=0,
-        highlightthickness=0,
-        command=lambda: [print_menu(7), print("button5")],
-        relief="flat"
-    )
-    button_5.place(
-        x=547.0,
-        y=316.0,
-        width=505.0,
-        height=502.0
-    )
+    positions = [
+        (30, 316),  # 첫 번째 줄 첫 번째 버튼 좌표
+        (375, 316),  # 첫 번째 줄 두 번째 버튼 좌표
+        (720, 316),  # 첫 번째 줄 세 번째 버튼 좌표
+        (30, 661),  # 두 번째 줄 첫 번째 버튼 좌표
+        (375, 661),  # 두 번째 줄 두 번째 버튼 좌표
+        (720, 661),  # 두 번째 줄 세 번째 버튼 좌표
+        (30, 1006),  # 세 번째 줄 첫 번째 버튼 좌표
+        (375, 1006),  # 세 번째 줄 두 번째 버튼 좌표
+        (720, 1006)  # 세 번째 줄 세 번째 버튼 좌표
+    ]
+
+    # 9개의 버튼을 생성 및 배치
+    buttons = []
+    for i in range(9):
+        button = Button(
+            page2,
+            image=button_image,
+            borderwidth=0,
+            highlightthickness=0,
+            command=lambda i=i: [print(f"button {i+1} clicked"), print_menu(i)],
+            relief="flat"
+        )
+        button.place(
+            x=positions[i][0],
+            y=positions[i][1],
+            width=button_width,
+            height=button_height
+        )
+        buttons.append(button)
+
+    window.resizable(False, False)
+
+    ###############################################
 
     button_image_6 = PhotoImage(file=relative_to_assets_2("button_5.png"))
     button_6 = Button(
