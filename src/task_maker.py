@@ -36,11 +36,22 @@ class Task:
                     tool_return = self.make_task(4, material)
                     tasks.append(tool_return)
                     
-            elif material == 1 or material == 2 or material == 5:
+            elif material == 1:
                 if repeat:
                     tool_get = self.make_task(1, material)
                     tasks.append(tool_get)
 
+                    pnp = self.make_task(3, material)
+
+                    task = [pnp] * repeat
+                    
+                    tasks.extend(task)
+
+                    tool_return = self.make_task(4, material)
+                    tasks.append(tool_return)
+
+            elif material == 2 or material == 5 or material == 6:
+                if repeat:
                     pnp = self.make_task(3, material)
 
                     task = [pnp] * repeat
@@ -65,7 +76,7 @@ class Task:
                     tasks.append(tool_return)
 
             # 좌우 이동 시 꼬임 방지
-            if material == 1:
+            if material == 1 or material == 2 or material == 4 or material == 6:
                 tasks.append(self.templete[0])
 
             

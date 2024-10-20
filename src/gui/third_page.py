@@ -260,7 +260,7 @@ def create_third_page():
             font=("Inter", 35 * -1)
         )
 
-        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
             file.write(f"menu_index = {custum_menu_list}\n")
 
             menu_y_position += menu_offset

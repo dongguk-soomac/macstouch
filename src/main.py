@@ -2,7 +2,7 @@
 # -- coding: utf-8 --
 
 import rospy
-from std_msgs.msg import String, Bool, Int16
+from std_msgs.msg import String, Bool, Int16, Float32MultiArray
 from macstouch.msg import order, state, vision_info, control_info, error, material
 
 import os, sys
@@ -15,8 +15,9 @@ import numpy as np
 # from macstouch_config import *
 from task_maker import Task
 
-MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce"]
-WeightLimit = [10, 10, 10, 10, 10, 10, 10, 10]
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce"]
+Loadcell = ["bread", "meat", "lettuce", "tomato", "onion", "pickle"]
+WeightLimit = [100, -100, 100, 100, 100, -1000]
 ModeList = ["init_pos", "vision", "pnp", "tool_return"]
 
 
@@ -58,25 +59,23 @@ class GUI:
 
 
 class WorkSpace:
-    def __init__(self) -> None:
-        self.mat_sub = rospy.Subscriber('/material_info', material, self.mat_callback, queue_size=1)
-        self.mat_pub = rospy.Publisher('/lack', String, queue_size=10)
+    def __init__(self):
+        self.mat_sub = rospy.Subscriber('/material_info', Float32MultiArray, self.mat_callback, queue_size=10)
+        self.mat_pub = rospy.Publisher('/error_info', String, queue_size=10)
         self.weights_limit = np.array(WeightLimit)
         self.weights = []
 
     def mat_callback(self, msg):
-        self.weights = np.array(msg.weights)
+        self.weights = np.array(msg.data)
         self.mat_check()
 
     def mat_check(self):
         lack_mat = ""
+        lack_str = "Lack of material: "
         dis = self.weights - self.weights_limit
         for idx, dis in enumerate(dis):
             if dis < 0:
-                lack_mat.join(MaterialList[idx]+',')
-
-        if len(lack_mat) > 0:
-            self.mat_pub.publish(lack_mat)
+                self.mat_pub.publish(lack_str + Loadcell[idx])
 
     def pickup_check(self):
         pass
@@ -94,7 +93,7 @@ class Vision:
 class Control:
     def __init__(self) -> None:
         self.state_sub = rospy.Subscriber('/robot_state', state, self.state_callback, queue_size=1)
-        self.error_pub = rospy.Publisher('/error_info', error, queue_size=10)
+        # self.error_pub = rospy.Publisher('/error_info', error, queue_size=10)
 
     def state_callback(self, msg):
         pass
@@ -142,7 +141,6 @@ class Request:
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.size = 0
-
 
         elif mode == 'pnp': # pnp
             request.mode = mode
@@ -227,7 +225,7 @@ def main():
     status = None
 
     while not rospy.is_shutdown():
-        print("========================================================")
+        print("===========================================")
         if IngId is None and len(OrderList) != 0:
             IngId = OrderList[0].id
             OrderList[0].state = "Ing"
@@ -236,12 +234,13 @@ def main():
         
         if IngId is None:
             print('주문이 없습니다.')
+            rate.sleep()
             continue
 
         step, status = req.task_control(step)
 
         if status != 'Done':
-            print("현재 상태: ", status)
+            print("들어온 주문 수 : ", len(OrderList))
             print("현재 진행 중인 주문 : ", IngId)
             print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
 
@@ -253,7 +252,6 @@ def main():
             status = None
             req.task_list = None
 
-        rate.sleep()
 
 
 if __name__ == "__main__":
