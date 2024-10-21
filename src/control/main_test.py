@@ -20,7 +20,7 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-    test_index = 0
+    test_index = 3
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')
@@ -77,7 +77,18 @@ def main():
             control_data.grip_size = 0
             control_req.publish(control_data)
             print('Mode : tool_get')
-            print(control_data)            
+            print(control_data)   
+
+        elif mode == 'finish':
+            control_data.mode = 'finish'
+            control_data.material = -1
+            control_data.grip_mode = 'x'
+            control_data.coord = [0, 0, 0, 0, 0, 0]
+            control_data.grip_size = 0
+            control_req.publish(control_data)
+            print('Mode : finish')
+            print(control_data)    
+
         else:
             print('해당 mode는 존재하지 않습니다.')
 

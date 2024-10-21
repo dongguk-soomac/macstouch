@@ -14,7 +14,7 @@ class DepthCamera:
         device = pipeline_profile.get_device()
         depth_sensor = device.first_depth_sensor()
 
-        # depth_sensor.set_option(rs.option.depth_units, 0.0001)
+        depth_sensor.set_option(rs.option.depth_units, 0.001)
 
         # Get depth scale of the device
         self.depth_scale =  depth_sensor.get_depth_scale()
