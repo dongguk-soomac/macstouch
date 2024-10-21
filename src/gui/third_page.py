@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk, Canvas, Button, PhotoImage, Frame
+from tkinter import Tk, Canvas, Button, PhotoImage, Frame, Label
 from pathlib import Path
 import second_page
 import subprocess
@@ -117,15 +117,16 @@ def create_third_page():
         (720, 1006)  # 세 번째 줄 세 번째 버튼 좌표
     ]
 
-    # 9개의 버튼을 생성 및 배치
-    buttons = []
+    # buttons = []
+    # texts= [0, 0, 0, 0, 0, 0, 0, 0, 0]
     for i in range(9):
+        # 버튼 생성
         button = Button(
-            page2,
+            window,
             image=button_image,
             borderwidth=0,
             highlightthickness=0,
-            command=lambda i=i: [print(f"button {i+1} clicked"), print_menu(i)],
+            command=lambda i=i: print(f"button {i+1} clicked"),
             relief="flat"
         )
         button.place(
@@ -134,7 +135,23 @@ def create_third_page():
             width=button_width,
             height=button_height
         )
-        buttons.append(button)
+
+        menu_list2button = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", '']
+        price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
+
+        # 버튼 위에 텍스트를 Label로 생성
+        label = Label(
+            window,
+            text="{}\n{}".format(menu_list2button[i], price_list2button[i]),
+            bg="#FFFFFF",  # 배경색 설정
+            fg="black",  # 글자색 설정
+            font=("Inter", 20 * -1)
+        )
+        label.place(
+            x=positions[i][0] + button_width // 2 - 15,  # 텍스트의 위치를 버튼 중앙으로 조정
+            y=positions[i][1] + button_height // 2 - 30
+        )
+
 
     window.resizable(False, False)
 
