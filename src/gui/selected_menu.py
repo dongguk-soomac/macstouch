@@ -1,1 +1,1 @@
-menu_index = [0, 0, 3, 3, 6, 6, 7, 4, 2]
+menu_index = [1]

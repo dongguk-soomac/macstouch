@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-from tkinter import Tk, Canvas, Button, PhotoImage, Frame
+from tkinter import Tk, Canvas, Button, PhotoImage, Frame, Label
 from pathlib import Path
 import subprocess
 from time import sleep
 import rospy
 from std_msgs.msg import String
 from selected_menu import menu_index
+from menu_info import menu_list
 
 tempo_menu = []
 
@@ -101,6 +102,7 @@ def create_second_page():
         147.0,
         image=image_image_4
     )
+
 
     button_image_2 = PhotoImage(file=relative_to_assets_2("button_1.png"))
     button_2 = Button(
@@ -220,6 +222,29 @@ def create_second_page():
         1561.0,
         image=image_image_5
     )
+
+    positions = [
+        (220.0, 300.0), (220.0, 830.0) ,(740.0, 830.0), (740.0, 300.0)
+    ]
+
+    button_width = 340
+    button_height = 335 
+
+    menu_list2button = ["제로 버거", "불고기 버거", "치즈 버거", "더블 치즈 버거"]
+    price_list2button = [4000, 5000, 6000, 7000]
+
+    for i in range(4):
+        label = Label(
+                window,
+                text="{}\n{}".format(menu_list2button[i], price_list2button[i]),
+                bg="#FFFFFF",  # 배경색 설정
+                fg="black",  # 글자색 설정
+                font=("Inter", 20 * -1)
+            )
+        label.place(
+            x=positions[i][0] + button_width // 2 - 15,  # 텍스트의 위치를 버튼 중앙으로 조정
+            y=positions[i][1] + button_height // 2 - 30
+        )
 
     def print_menu(menu_num):
         global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
