@@ -39,15 +39,19 @@ class Action:
 
         ## offset
         # pick and place offset
-        self.pnp_offset_up = [0, 0, 200, 0, 0, 0]
-        self.pnp_offset_down = [0, 0, -200, 0, 0, 0]
+        self.pnp_offset_up = [0, 0, 100, 0, 0, 0]
+        self.pnp_offset_down = [0, 0, -100, 0, 0, 0]
         self.pnp_offset_back = [-100, 0, 0, 0, 0, 0]
+        self.pnp_offset_after_up = [0, 0, 130, 0, 0, 0]
+        self.tool_offset_forward = [150, 0, 0, 0, 0, 0]
+        self.tool_offset_backward = [-150, 0, 0, 0, 0, 0]
 
-        self.tool_offset_forward = [200, 0, 0, 0, 0, 0]
-        self.tool_offset_backward = [-200, 0, 0, 0, 0, 0]
-        self.tool_offset_upward = [0, 0, 100, 0, 0, 0]
-        self.tool_offset_downward = [0, 0, -100, 0, 0, 0]
-
+        self.tool_offset_slow_forward = [50, 0, 0, 0, 0, 0]
+        self.tool_offset_slow_backward = [-50, 0, 0, 0, 0, 0]
+                
+        self.tool_offset_upward = [0, 0, 160, 0, 0, 0]
+        self.tool_offset_downward = [0, 0, -160, 0, 0, 0]
+        
         # for 빵 뚜껑 집기
         self.bread_offset_up = [0, 0, 0, 0, 0, 0]
         self.bread_offset_down = [0, 0, 0, 0, 0, 0]
@@ -55,9 +59,11 @@ class Action:
         # for 소스
         self.sauce_offset_forward = [100, 0, 0, 0, 0, 0]
         self.sauce_offset_backward = [-100, 0, 0, 0, 0, 0]
-        self.sauce_offset_upward = [0, 0, 20, 0, 0, 0]
-        self.sauce_offset_downward = [0, 0, -20, 0, 0, 0]
+        self.sauce_offset_upward = [0, 0, 100, 0, 0, 0]
+        self.sauce_offset_downward = [0, 0, -100, 0, 0, 0]
 
+        self.sauce_pnp_offset_upward = [0, 0, 150, 0, 0, 0]
+        self.sauce_pnp_offset_downward = [0, 0, -150, 0, 0, 0]
         
         
     # 소켓 통신으로 보내는 문자열 생성
@@ -114,57 +120,68 @@ class Action:
     def action_tool_get(self, tool_index, tool_position, posture):
         if tool_position[0] <= 0: # 빵, 패티, 소스 x방향 보정
             self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)            
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)        
+            self.tool_offset_slow_backward = self.direction_change(self.tool_offset_slow_backward)
+            self.tool_offset_slow_forward = self.direction_change(self.tool_offset_slow_forward)                      
 
         # 기본툴로 변경
         setdata1 = self.make_str("ToolBase",  tool_index)
         print(tool_index)   
 
         # 2. tool 장착 + 오프셋으로 이동
-        offset_point = self.list_add(tool_position, self.tool_offset_backward)
+        offset_point = self.list_add(self.list_add(tool_position, self.tool_offset_backward), self.tool_offset_slow_backward)
         offset_point.append(posture)
         setdata2 = self.make_str("MovePoint", self.format_array(offset_point))
             
         # 3. 그리퍼 열기
         setdata3 = self.make_str("Gripper", True)
         
-        # 4. 속도 감소
-        setdata4 = self.make_str("ChangeParam",  1)
+        # 5. 장착 직전까지 이동
+        setdata4 = self.make_str("MoveOffset", self.format_array(self.tool_offset_forward))
         
-        # 5. 장착하는 방향
-        setdata5 = self.make_str("MoveOffset", self.format_array(self.tool_offset_forward))
+        # 6. 속도 매우느림으로 변경
+        setdata5 = self.make_str("ChangeParam",  1)
+
+        # 7. 장착
+        setdata6 = self.make_str("MoveOffset", self.format_array(self.tool_offset_slow_forward))
+
+        # 8. 속도 보통으로 변경
+        setdata7 = self.make_str("ChangeParam", 0)
+
+        # 9. 위로
+        setdata8 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_upward))
         
-        # 6. 위로
-        setdata6 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_upward))
+        # 10. tool 변경
+        setdata9 = self.make_str("ToolNum",  tool_index)
         
-        # 6. tool 변경
-        setdata7 = self.make_str("ToolNum",  tool_index)
-        
-        # 7. 뒤로 이동
-        setdata8 = self.make_str("MoveOffset",  self.format_array(self.tool_offset_backward))
+        # 11. 뒤로 이동
+        offset_point_back = self.list_add(self.tool_offset_slow_backward, self.tool_offset_backward)
+        setdata10 = self.make_str("MoveOffset",  self.format_array(offset_point_back))
         print(tool_index)
-        
-        # 8. 속도 원위치
-        setdata9 = self.make_str("ChangeParam",  0)
 
         if tool_position[0] <= 0: # 방향 원위치
             self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)      
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)   
+            self.tool_offset_slow_backward = self.direction_change(self.tool_offset_slow_backward)
+            self.tool_offset_slow_forward = self.direction_change(self.tool_offset_slow_forward)                 
 
-        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9])
+        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9, setdata10])
         socke.send_data(setdata)
 
 
     def tool_return(self, tool_coord, posture):
         if tool_coord[0] <= 0: # 방향 반대로
             self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)     
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)   
+            self.tool_offset_slow_backward = self.direction_change(self.tool_offset_slow_backward)
+            self.tool_offset_slow_forward = self.direction_change(self.tool_offset_slow_forward)     
 
         # 1. change tool
         setdata1 = self.make_str("ToolBase",  0)
 
         # 2. tool 장착 + 뒤 + 위
-        offset_point = self.list_add(self.list_add(tool_coord, self.tool_offset_backward),self.tool_offset_upward)
+        tool_back = self.list_add(self.tool_offset_backward, self.tool_offset_slow_backward)
+        offset_point = self.list_add(self.list_add(tool_coord, tool_back),self.tool_offset_upward)
         offset_point.append(posture)
         setdata2 = self.make_str("MovePoint", self.format_array(offset_point))
             
@@ -172,31 +189,41 @@ class Action:
         setdata3 = self.make_str("Gripper", True)
 
         # 4. 오프셋 앞으로
-        setdata4 = self.make_str("MoveOffset", self.format_array(self.tool_offset_forward))
-
-        # 5. 속도 감소
-        setdata5 = self.make_str("ChangeParam", 1)
+        setdata4 = self.make_str("MoveOffset", self.format_array(self.list_add(self.tool_offset_forward, self.tool_offset_slow_forward)))
 
         # 6. 오프셋 아래로
-        setdata6 = self.make_str("MoveOffset", self.format_array(self.tool_offset_downward))
+        setdata5 = self.make_str("MoveOffset", self.format_array(self.tool_offset_downward))
 
-        # 7. 오프셋 뒤로
-        setdata7 = self.make_str("MoveOffset", self.format_array(self.tool_offset_backward))
+        # 5. 속도 감소
+        setdata6 = self.make_str("ChangeParam", 1)
+
+        # 7. 툴 빼기
+        setdata7 = self.make_str("MoveOffset", self.format_array(self.tool_offset_slow_backward))
 
         # 8. 속도 원위치
         setdata8 = self.make_str("ChangeParam",  0)
 
+        # 9. 뒤로 오프셋
+        setdata9 = self.make_str("MoveOffset", self.format_array(self.tool_offset_backward))        
+
         if tool_coord[0] <= 0: # 방향 원위치
             self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward) 
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)   
+            self.tool_offset_slow_backward = self.direction_change(self.tool_offset_slow_backward)
+            self.tool_offset_slow_forward = self.direction_change(self.tool_offset_slow_forward)    
 
-        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8])
+        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9])
         socke.send_data(setdata)
 
 
     def action_pick(self, grip_mode, material_coord, posture):
         after_pick = list(deepcopy(material_coord))
         # after_pick[3:6] = -90, 0, 180 # 양상추 잡는 각도가 반대라 일단 보류 -> 추후 case 나누거나 중간 점 찾는 등으로 해결
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+        
+        setdata0 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
+
         # 2-1. 그리퍼
         setdata1 = self.make_str("Gripper", True)
         # 2-2. "재료 위치 + 오프셋"으로 이동
@@ -211,11 +238,15 @@ class Action:
         setdata4 = self.make_str("Gripper", False)
 
         # 4. 오프셋
-        offset_point_2 = self.list_add(after_pick, self.pnp_offset_up)
+        offset_point_2 = self.list_add(after_pick, self.pnp_offset_after_up)
+        offset_point_2 = self.list_add(offset_point_2, self.pnp_offset_back)
         offset_point_2.append(posture)
         setdata5 = self.make_str("MovePoint", self.format_array(offset_point_2))
 
-        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5])
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+
+        setdata = '='.join([setdata0, setdata1, setdata2, setdata3, setdata4, setdata5])
         socke.send_data(setdata)
     
     def action_back(self):        
@@ -308,60 +339,49 @@ class Action:
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9])
         socke.send_data(setdata)    
 
-    def action_sauce_pick(self, sauce_coord, posture):
-
-        self.sauce_offset_backward = self.direction_change(self.sauce_offset_backward)
-        self.sauce_offset_forward = self.direction_change(self.tool_offset_forward)     
-
-        # 1. 그리퍼 열기
-        setdata1 = self.make_str("Gripper", True)
-
-        # 소스 위치 + 오프셋 이동
-        setdata2 = self.make_str("MovePoint", self.format_array(self.list_add(sauce_coord+self.sauce_offset_backward)))
-
-        # 소스 위치로 이동
-        setdata3 = self.make_str("MoveOffset", self.format_array(self.sauce_offset_forward))
-        
-        # 위로 이동
-        setdata4 = self.make_str("MoveOffset", self.format_array(self.sauce_offset_upward))
-        
-        # 뒤로 이동
-        setdata5 = self.make_str("MoveOffset", self.format_array(self.sauce_offset_backward))
-        
-        self.sauce_offset_backward = self.direction_change(self.sauce_offset_backward)
-        self.sauce_offset_forward = self.direction_change(self.tool_offset_forward)   
-
     def action_sauce_place(self, place_coord, posture):
+        setdata = [''] * 15
+        
         # 소스 위치 + 오프셋 이동
-        setdata1 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord+self.pnp_offset_up)))
+        offet_1 = self.list_add(place_coord, self.sauce_pnp_offset_upward)
+        offet_1.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
 
         # 소스 도포 위치로 이동
-        setdata2 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord + self.sauce_offset_upward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.list_add(self.sauce_pnp_offset_downward, self.sauce_offset_upward))))
+
         n_value = 8
-        sauce_circle = self.sauce_traj(place_coord, r = 15, n = n_value)
+        sauce_coord = self.list_add(place_coord, self.sauce_offset_upward)
+        sauce_circle = self.sauce_traj(sauce_coord, r = 15, n = n_value, posture = posture)
 
         # 소스 도포 점의 첫 점으로 이동
-        setdata3 = self.make_str("MovePoint", self.format_array(sauce_circle[0]))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
+
+        # 8. 속도 느리게
+        setdata.append(self.make_str("ChangeParam",  2))
 
         # 그리퍼 닫기
-        setdata4 = self.make_str("Gripper", False)        
-
+        # setdata4 = self.make_str("Gripper", False)        
+        
         # 원 그리며 도포
-        setdata5 = self.make_str("MovePoint", self.format_array(sauce_circle[1]))    
-        setdata6 = self.make_str("MovePoint", self.format_array(sauce_circle[2]))  
-        setdata7 = self.make_str("MovePoint", self.format_array(sauce_circle[3]))  
-        setdata8 = self.make_str("MovePoint", self.format_array(sauce_circle[4]))  
-        setdata9 = self.make_str("MovePoint", self.format_array(sauce_circle[5]))  
-        setdata10 = self.make_str("MovePoint", self.format_array(sauce_circle[6]))  
-        setdata11 = self.make_str("MovePoint", self.format_array(sauce_circle[7]))                                          
-        setdata12 = self.make_str("MovePoint", self.format_array(sauce_circle[0]))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[1]))) 
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[2]))) 
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[3])))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[4])))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[5])))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[6])))
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[7])))                                       
+        setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
 
-        setdata13 = self.make_str("MovePoint", self.format_array(self.list_add(place_coord + self.pnp_offset_up)))
+        # 8. 속도 느리게
+        setdata.append(self.make_str("ChangeParam",  0))
 
-        setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9, setdata10, setdata11, setdata12, setdata13])        
+        setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+        setdata = '='.join(setdata)        
         socke.send_data(setdata) 
     
-    def sauce_traj(center_coord, r, n):
+    def sauce_traj(self, center_coord, r, n, posture):
         # 각도를 n 개로 분할
         angles = np.linspace(0, 2 * np.pi, n)
 
@@ -374,7 +394,7 @@ class Action:
             rz = center_coord[3]
             ry = center_coord[4]
             rx = center_coord[5]
-            circle_points.append((x, y, z, rz, ry, rx))
+            circle_points.append((x, y, z, rz, ry, rx, posture))
     
         return circle_points
 
@@ -429,9 +449,10 @@ class Ros():
         elif action_name == "bread_place":
             action.action_bread_place(target_position, target_position_2, posture)            
         elif action_name == "bread_close":
-            action.action_bread_close(target_position, target_position_2, posture)           
-        elif action_name == "back":
-            action.action_back()                       
+            action.action_bread_close(target_position, target_position_2, posture)                            
+        elif action_name == "sauce_place":
+            action.action_sauce_place(target_position, posture)                                     
+                                
                                 
 
     def publish_action_done(self, done):

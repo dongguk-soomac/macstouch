@@ -19,7 +19,7 @@ from copy import deepcopy
 # from macstouch_config import MaterialList
 from realsense.realsense_camera import DepthCamera
 
-MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", "case"]
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce"]
 VisionClass = ["pickle", "tomato"]
 resolution_width, resolution_height = (1280,  720)
 
@@ -40,6 +40,7 @@ class Vision:
         self.depth_raw_frame = depth_raw_frame
         self.depth_frame = depth_raw_frame.as_depth_frame()
         self.depth_image = np.asanyarray(depth_raw_frame.get_data())
+        self.model(self.color_frame)
 
         self.depth_scale = self.rs.get_depth_scale()
 
@@ -143,7 +144,7 @@ class Vision:
 
         _bbox = None
 
-        center_weight = 0.2
+        center_weight = 0.0
         z_weight = 1
 
         for result in results:
