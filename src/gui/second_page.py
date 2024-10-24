@@ -8,6 +8,7 @@ import rospy
 from std_msgs.msg import String
 from selected_menu import menu_index
 from menu_info import menu_list
+from PIL import Image, ImageTk
 
 tempo_menu = []
 
@@ -23,7 +24,8 @@ max_menu_limit = 9
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets")
 
 from menu_info import menu_list, price_list 
 
@@ -31,13 +33,16 @@ from menu_info import menu_list, price_list
 def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
+def relative_to_assets_1(path: str) -> Path:
+    return ASSETS_PATH_1 / Path(path)
+
 def open_third_page(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/third_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/third_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
     sleep(1)
     window.destroy()
 
@@ -103,11 +108,30 @@ def create_second_page():
         image=image_image_4
     )
 
+    size = 505
 
-    button_image_2 = PhotoImage(file=relative_to_assets_2("button_1.png"))
+    image_image_9_original = Image.open(relative_to_assets_1("zero.png"))
+    image_image_9_resized = image_image_9_original.resize((size, size))  # 원하는 크기로 리사이즈
+    image_image_9 = ImageTk.PhotoImage(image_image_9_resized)
+
+    image_image_6_original = Image.open(relative_to_assets_1("cheeze.png"))
+    image_image_6_resized = image_image_6_original.resize((size, size))  # 원하는 크기로 리사이즈
+    image_image_6 = ImageTk.PhotoImage(image_image_6_resized)
+
+    image_image_7_original = Image.open(relative_to_assets_1("meat.png"))
+    image_image_7_resized = image_image_7_original.resize((size, size))  # 원하는 크기로 리사이즈
+    image_image_7 = ImageTk.PhotoImage(image_image_7_resized)
+
+    image_image_8_original = Image.open(relative_to_assets_1("double_patty.png"))
+    image_image_8_resized = image_image_8_original.resize((size, size))  # 원하는 크기로 리사이즈
+    image_image_8 = ImageTk.PhotoImage(image_image_8_resized)
+
+##############################################################
+
+    button_image_2 = PhotoImage(file=relative_to_assets_1("cheeze.png"))
     button_2 = Button(
         page2,
-        image=button_image_2,
+        image=image_image_9,
         borderwidth=0,
         highlightthickness=0,
         command=lambda: [print_menu(0), print("button2")],
@@ -120,10 +144,10 @@ def create_second_page():
         height=502.0
     )
 
-    button_image_3 = PhotoImage(file=relative_to_assets_2("button_2.png"))
+    button_image_3 = PhotoImage(file=relative_to_assets_1("meat.png"))
     button_3 = Button(
         page2,
-        image=button_image_3,
+        image=image_image_6,
         borderwidth=0,
         highlightthickness=0,
         command=lambda: [print_menu(1), print("button3")],
@@ -136,10 +160,10 @@ def create_second_page():
         height=502.0
     )
 
-    button_image_4 = PhotoImage(file=relative_to_assets_2("button_3.png"))
+    button_image_4 = PhotoImage(file=relative_to_assets_1("double_patty.png"))
     button_4 = Button(
         page2,
-        image=button_image_4,
+        image=image_image_7,
         borderwidth=0,
         highlightthickness=0,
         command=lambda: [print_menu(2), print("button4")],
@@ -152,10 +176,10 @@ def create_second_page():
         height=502.0
     )
 
-    button_image_5 = PhotoImage(file=relative_to_assets_2("button_4.png"))
+    button_image_5 = PhotoImage(file=relative_to_assets_1("zero.png"))
     button_5 = Button(
         page2,
-        image=button_image_5,
+        image=image_image_8,
         borderwidth=0,
         highlightthickness=0,
         command=lambda: [print_menu(3), print("button5")],
@@ -167,6 +191,8 @@ def create_second_page():
         width=505.0,
         height=502.0
     )
+
+##############################################################
 
     button_image_6 = PhotoImage(file=relative_to_assets_2("button_5.png"))
     button_6 = Button(
@@ -222,29 +248,6 @@ def create_second_page():
         1561.0,
         image=image_image_5
     )
-
-    positions = [
-        (220.0, 300.0), (220.0, 830.0) ,(740.0, 830.0), (740.0, 300.0)
-    ]
-
-    button_width = 340
-    button_height = 335 
-
-    menu_list2button = ["제로 버거", "불고기 버거", "치즈 버거", "더블 패티 버거"]
-    price_list2button = [4000, 5000, 6000, 7000]
-
-    for i in range(4):
-        label = Label(
-                window,
-                text="{}\n{}".format(menu_list2button[i], price_list2button[i]),
-                bg="#FFFFFF",  # 배경색 설정
-                fg="black",  # 글자색 설정
-                font=("Inter", 20 * -1)
-            )
-        label.place(
-            x=positions[i][0] + button_width // 2 - 15,  # 텍스트의 위치를 버튼 중앙으로 조정
-            y=positions[i][1] + button_height // 2 - 30
-        )
 
     def print_menu(menu_num):
         global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
@@ -302,7 +305,7 @@ def create_second_page():
             font=("Inter", 35 * -1)
         )
 
-        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
             file.write(f"menu_index = [{menu_num}]\n")
             file.close()
 
