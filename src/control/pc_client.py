@@ -71,6 +71,13 @@ class Action:
         self.lid_close_upward = [0, 0, 50, 0, 0, 0]
         self.lid_close_downward = [0, 0, -50, 0, 0, 0]        
 
+
+        # for grill_open
+        self.grill_offset_forward = [-150, 0, 0, 0, 0, 0]
+        self.grill_offset_backward = [150, 0, 0, 0, 0, 0]
+        self.grill_offset_upward = [0, 0, 250, 0, 0, 0]
+        self.grill_offset_downward = [0, 0, -250, 0, 0, 0]
+
     # 소켓 통신으로 보내는 문자열 생성
     def make_str(self, *args):
         # 전달받은 모든 인자들을 문자열로 변환하고 +로 결합
@@ -388,18 +395,16 @@ class Action:
         data_num = traj_num + 6
         setdata = [''] * data_num
  
-        if traj[0][0] <= 0:
-            self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)            
+      
 
         # 그릴 손잡이 위치 + 오프셋 이동
-        offet_1 = self.list_add(self.list_add(traj[0], self.tool_offset_backward),self.tool_offset_upward)
+        offet_1 = self.list_add(self.list_add(traj[0], self.grill_offset_backward),self.grill_offset_upward)
         offet_1.append(posture)
         setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
 
         # 그릴 손잡이 위치로 이동
-        setdata.append(self.make_str("MoveOffset", self.format_array(self.tool_offset_downward)))
-        setdata.append(self.make_str("MoveOffset", self.format_array(self.tool_offset_forward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.grill_offset_downward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.grill_offset_forward)))
 
         # 8. 속도 느리게
         setdata.append(self.make_str("ChangeParam",  3))
@@ -411,14 +416,11 @@ class Action:
 
 
 
-        setdata.append(self.make_str("Moveoffset", self.format_array(self.tool_offset_backward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.grill_offset_backward)))
 
         # 8. 속도 보통
         setdata.append(self.make_str("ChangeParam",  0))
 
-        if traj[0][0] <= 0:
-            self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
-            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)   
 
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
@@ -579,7 +581,7 @@ class Ros():
             action.action_lid_close(traj, posture)       
 
         elif action_name == "push":
-            action.action_push(target_position, target_position_2, posture)
+            action.action_push(target_position, posture)
 
         elif action_name == "test_pos":
             action.action_test_pos(target_position, posture)                                                    

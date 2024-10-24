@@ -149,7 +149,7 @@ class ManageCoord:
 
         # 빵, 패티, 그릴 패티의 초기 index 설정
         self.bread_index = 0
-        self.meat_index = 0     
+        self.meat_index = 2     
         self.grill_meat_index = 0           
 
         # 토마토, 피클의 place 위치 보정
@@ -160,11 +160,13 @@ class ManageCoord:
         self.pickle_num = 0
         self.theta = None
 
+        self.make_meat_coord_list()
+
     def make_meat_coord_list(self):
-        meat_index_is_0 = self.meat_coord
-        meat_index_is_1 = self.meat_coord
-        meat_index_is_2 = self.meat_coord # 기준
-        meat_index_is_3 = self.meat_coord
+        meat_index_is_0 = deepcopy(self.meat_coord)
+        meat_index_is_1 = deepcopy(self.meat_coord)
+        meat_index_is_2 = deepcopy(self.meat_coord) # 기준
+        meat_index_is_3 = deepcopy(self.meat_coord)
 
         meat_index_is_0[2] += self.meat_offset[2]
         
@@ -176,9 +178,11 @@ class ManageCoord:
         self.meat_coord_list = [meat_index_is_0, meat_index_is_1, meat_index_is_2, meat_index_is_3]
 
         # about grill meat
-        grill_meat_index_is_0 = self.grill_meat_coord
-        grill_meat_index_is_1 = self.grill_meat_coord
+        grill_meat_index_is_0 = deepcopy(self.grill_meat_coord)
+        grill_meat_index_is_1 = deepcopy(self.grill_meat_coord)
         grill_meat_index_is_1[1] += self.grill_meat_offset[1]
+        grill_meat_index_is_0[2] -= coordinates_data["tool_length"][1]
+        grill_meat_index_is_1[2] -= coordinates_data["tool_length"][1]
         self.grill_meat_coord_list = [grill_meat_index_is_0, grill_meat_index_is_1]
 
     def change_bread_pick_coord(self):
@@ -290,9 +294,9 @@ class Control:
         self.init_pos = deepcopy(coordinates_data["init_pos"])
         self.tool_coord = deepcopy(coordinates_data["tool_coord"]) # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
         self.grill_open_traj = deepcopy(coordinates_data["grill_open_traj"])
-        self.grill_close_traj = deepcopy(coordinates_data["grill_close_traj"])    
+        # self.grill_close_traj = deepcopy(coordinates_data["grill_close_traj"])    
         self.lib_close_traj = deepcopy(coordinates_data["lib_close_traj"])
-        self.push_traj = deepcopy(coordinates_data["push_traj"])
+        self.push_start = deepcopy(coordinates_data["push_start"])
         tool_length = deepcopy(coordinates_data["tool_length"])
 
         self.vision_coord = np.zeros((10, 6))
@@ -307,6 +311,9 @@ class Control:
                 self.tool_coord[i][0] -= 158.2       
             else:
                 self.tool_coord[i][0] += 158.2
+
+        for idx, _ in enumerate(self.grill_open_traj):
+            self.grill_open_traj[idx][0] -= tool_length[1]
 
         self.vision_coord[9] = deepcopy(coordinates_data["case_vision_coord"])
         self.vision_coord[9][1] += tool_length[9]
@@ -525,7 +532,7 @@ class Control:
 
         elif self.action_state == 6:
             print('##### [Mode : finish] step_5 : push')
-            self.control_action_pub('push', coord=self.push_traj[0], coord_2=self.push_traj[1], posture=2)            
+            self.control_action_pub('push', coord=self.push_start, posture=2)            
             self.action_state += 1
 
         elif self.action_state == 7:
@@ -574,12 +581,7 @@ class Control:
             self.managecoord.meat_index -= 1
             self.action_state += 1
 
-        elif self.action_state == 6:
-            print('##### [Mode : pnp] step_4 : grill_close action')
-            self.control_action_pub('grill_close', traj=self.grill_close_traj, posture=6)  
-            self.action_state += 1
-
-        elif self.action_state == 7: # grill is not open
+        elif self.action_state == 6: # grill is not open
             print('##### [Mode : pnp] patty is already full')
             self.pub_done()
 
