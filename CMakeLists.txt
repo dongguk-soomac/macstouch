@@ -217,7 +217,8 @@ include_directories(
 catkin_install_python(PROGRAMS
   src/control/control.py
   src/control/main_test.py
-  src/control/client_test.py
   src/control/pc_client.py
+  src/main.py
+  src/test_gui.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}  
 )

@@ -2,7 +2,7 @@
 # -- coding: utf-8 --
 
 import rospy
-from std_msgs.msg import String, Bool, Int16
+from std_msgs.msg import String, Bool, Int16, Float32MultiArray
 from macstouch.msg import order, state, vision_info, control_info, error, material
 
 import os, sys
@@ -12,8 +12,13 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import numpy as np
 
-from macstouch_config import *
+# from macstouch_config import *
 from task_maker import Task
+
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce"]
+Loadcell = ["bread", "meat", "lettuce", "tomato", "onion", "pickle"]
+WeightLimit = [100, -100, 100, 100, 100, -1000]
+ModeList = ["init_pos", "vision", "pnp", "tool_return"]
 
 
 OrderList = []
@@ -54,25 +59,23 @@ class GUI:
 
 
 class WorkSpace:
-    def __init__(self) -> None:
-        self.mat_sub = rospy.Subscriber('/material_info', material, self.mat_callback, queue_size=1)
-        self.mat_pub = rospy.Publisher('/lack', String, queue_size=10)
+    def __init__(self):
+        self.mat_sub = rospy.Subscriber('/material_info', Float32MultiArray, self.mat_callback, queue_size=10)
+        self.mat_pub = rospy.Publisher('/error_info', String, queue_size=10)
         self.weights_limit = np.array(WeightLimit)
         self.weights = []
 
     def mat_callback(self, msg):
-        self.weights = np.array(msg.weights)
+        self.weights = np.array(msg.data)
         self.mat_check()
 
     def mat_check(self):
         lack_mat = ""
+        lack_str = "Lack of material: "
         dis = self.weights - self.weights_limit
         for idx, dis in enumerate(dis):
             if dis < 0:
-                lack_mat.join(MaterialList[idx]+',')
-
-        if len(lack_mat) > 0:
-            self.mat_pub.publish(lack_mat)
+                self.mat_pub.publish(lack_str + Loadcell[idx])
 
     def pickup_check(self):
         pass
@@ -81,7 +84,7 @@ class WorkSpace:
 class Vision:
     def __init__(self) -> None:
         self.vision_sub = rospy.Subscriber('/pick_coord', vision_info, self.vision_callback, queue_size=1)
-        self.coords = [{'ready': False, 'grip_mode': None, 'coord': None, 'size': None}] * len(MaterialList)
+        self.coords = [{'ready': False, 'grip_mode': 'x', 'coord': [0,0,0,0,0,0], 'size': 0}] * len(MaterialList)
 
     def vision_callback(self, msg):
         self.coords[msg.material] = {'ready': True, 'grip_mode': msg.grip_mode, 'coord': msg.coord, 'size': msg.size}
@@ -90,7 +93,7 @@ class Vision:
 class Control:
     def __init__(self) -> None:
         self.state_sub = rospy.Subscriber('/robot_state', state, self.state_callback, queue_size=1)
-        self.error_pub = rospy.Publisher('/error_info', error, queue_size=10)
+        # self.error_pub = rospy.Publisher('/error_info', error, queue_size=10)
 
     def state_callback(self, msg):
         pass
@@ -102,7 +105,7 @@ class Control:
 class Request:
     def __init__(self):
         self.vision = Vision()
-        self.vision_pub = rospy.Publisher('/vision_req', String, queue_size=10)
+        self.vision_pub = rospy.Publisher('/vision_req', Int16, queue_size=10)
         self.control_pub = rospy.Publisher('/control_req', control_info, queue_size=10)
         self.workspace_pub = rospy.Publisher('/workspace', String, queue_size=10)
         self.done_sub = rospy.Subscriber('/done', Bool, self.done_callback)
@@ -111,38 +114,54 @@ class Request:
         self.current_task = None
 
     def vision_req(self, material):
+        rospy.sleep(0.5)
         self.vision_pub.publish(material)
 
     def control_req(self, mode, material=None, grip_mode=None, coord=None, size=None):
         request = control_info()
+        print(mode)
 
         if mode == 'init_pos': # init_pos
             request.mode = mode
             request.material = -1
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 30
+            request.size = 30
 
-        elif mode == 1: # vision
+        elif mode == 'tool_get': # tool_get
             request.mode = mode
             request.material = material
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
 
-        elif mode == 2: # pnp
+        elif mode == 'vision': # vision
+            request.mode = mode
+            request.material = material
+            request.grip_mode = '0'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.size = 0
+
+        elif mode == 'pnp': # pnp
             request.mode = mode
             request.material = material
             request.grip_mode = grip_mode
             request.coord = coord
-            request.grip_size = 30
+            request.size = OrderList[0].menu[3]
 
-        elif mode == 3: # tool_return
+        elif mode == 'tool_return': # tool_return
             request.mode = mode
             request.material = material
-            request.grip_mode = 'x'
+            request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
-            request.grip_size = 0
+            request.size = 0
+
+        elif mode == 'finish': # finish
+            request.mode = mode
+            request.material = 0
+            request.grip_mode = '0'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.size = 0
 
         self.control_pub.publish(request)
 
@@ -158,6 +177,7 @@ class Request:
             self.current_task = [self.task_list[step], 0]
 
         if self.current_task[1] == 0:
+            print(self.current_task)
             if self.current_task[0]['mode'] == 'pnp':
                 self.control_req(self.current_task[0]['mode'], self.current_task[0]['material'],
                                  grip_mode=self.vision.coords[self.current_task[0]['material']]['grip_mode'],
@@ -166,6 +186,7 @@ class Request:
                 self.vision.coords[self.current_task[0]['material']]['ready'] = False
             else:
                 self.control_req(self.current_task[0]['mode'], self.current_task[0]['material'])
+            self.current_task[1] = -1
 
 
         elif self.current_task[1] == 1:
@@ -181,7 +202,7 @@ class Request:
                 step += 1
                 self.current_task = None
 
-        if step == len(self.task_list):
+        if step > len(self.task_list)-1:
             status = 'Done'
 
         return step, status
@@ -204,7 +225,7 @@ def main():
     status = None
 
     while not rospy.is_shutdown():
-        print("========================================================")
+        print("===========================================")
         if IngId is None and len(OrderList) != 0:
             IngId = OrderList[0].id
             OrderList[0].state = "Ing"
@@ -213,14 +234,17 @@ def main():
         
         if IngId is None:
             print('주문이 없습니다.')
+            rate.sleep()
             continue
 
         step, status = req.task_control(step)
 
-        print("현재 진행 중인 주문 : ", IngId)
-        print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
+        if status != 'Done':
+            print("들어온 주문 수 : ", len(OrderList))
+            print("현재 진행 중인 주문 : ", IngId)
+            print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
 
-        if status == 'done':
+        else:
             print("{} 제작이 완료되었습니다.".format(IngId))
             gui.order_complete(IngId)
             IngId = None
@@ -228,7 +252,6 @@ def main():
             status = None
             req.task_list = None
 
-        rate.sleep()
 
 
 if __name__ == "__main__":

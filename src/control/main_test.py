@@ -20,7 +20,7 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-    test_index = 0
+    test_index = 5
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')
@@ -33,7 +33,7 @@ def main():
             control_data.material = -1
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
-            control_data.grip_size = 30
+            control_data.size = 30
             control_req.publish(control_data)
             print('Mode : init_pos')
             print(control_data)
@@ -43,7 +43,7 @@ def main():
             control_data.material = test_index
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
-            control_data.grip_size = 0
+            control_data.size = 0
             control_req.publish(control_data)
             print('Mode : vision')
             print(control_data)
@@ -54,7 +54,7 @@ def main():
             control_data.grip_mode = '0'
             # control_data.coord = [500,500,300,-15,0,180]
             control_data.coord = [0, 0, 25,-90, 0,-180]            
-            control_data.grip_size = 30
+            control_data.size = 30
             control_req.publish(control_data)
             print('Mode : pnp')
             print(control_data)
@@ -64,7 +64,7 @@ def main():
             control_data.material = test_index
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
-            control_data.grip_size = 0
+            control_data.size = 0
             control_req.publish(control_data)
             print('Mode : tool_return')
             print(control_data)
@@ -74,10 +74,21 @@ def main():
             control_data.material = test_index
             control_data.grip_mode = 'x'
             control_data.coord = [0, 0, 0, 0, 0, 0]
-            control_data.grip_size = 0
+            control_data.size = 0
             control_req.publish(control_data)
             print('Mode : tool_get')
-            print(control_data)            
+            print(control_data)   
+
+        elif mode == 'finish':
+            control_data.mode = 'finish'
+            control_data.material = -1
+            control_data.grip_mode = 'x'
+            control_data.coord = [0, 0, 0, 0, 0, 0]
+            control_data.size = 0
+            control_req.publish(control_data)
+            print('Mode : finish')
+            print(control_data)    
+
         else:
             print('해당 mode는 존재하지 않습니다.')
 
