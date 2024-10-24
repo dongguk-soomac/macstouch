@@ -46,12 +46,14 @@ class Action:
         self.tool_offset_forward = [150, 0, 0, 0, 0, 0]
         self.tool_offset_backward = [-150, 0, 0, 0, 0, 0]
 
+        self.pnp_case_offset_up = [0, 0, 200, 0, 0, 0]
         self.tool_offset_slow_forward = [50, 0, 0, 0, 0, 0]
         self.tool_offset_slow_backward = [-50, 0, 0, 0, 0, 0]
                 
         self.tool_offset_upward = [0, 0, 160, 0, 0, 0]
         self.tool_offset_downward = [0, 0, -160, 0, 0, 0]
         
+        self.tool_offset_45 = 100
         # for 빵 뚜껑 집기
         self.bread_offset_up = [0, 0, 0, 0, 0, 0]
         self.bread_offset_down = [0, 0, 0, 0, 0, 0]
@@ -182,6 +184,54 @@ class Action:
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9, setdata10])
         socke.send_data(setdata)
 
+    def action_tool_get_45(self, tool_index, tool_position, posture):                     
+        setdata = [''] * 10
+        
+        # 기본툴로 변경
+        print("45###############")
+        setdata.append(self.make_str("ToolBase",  tool_index))
+
+        # 3. 그리퍼 열기
+        setdata.append(self.make_str("Gripper", True))
+        
+        
+        tool_offset_back = [0]*6
+        tool_offset_back[0] = -self.tool_offset_45 * np.cos((90+tool_position[3]) * np.pi/180)
+        tool_offset_back[1] = -self.tool_offset_45 * np.sin((90+tool_position[3]) * np.pi/180)
+
+        tool_offset_front = [0]*6
+        tool_offset_front[0] = 0.5 * self.tool_offset_45 * np.cos((90+tool_position[3]) * np.pi/180)
+        tool_offset_front[1] = 0.5 * self.tool_offset_45 * np.sin((90+tool_position[3]) * np.pi/180)
+
+        # 45도 방향 오프셋으로 이동
+        offset_point = self.list_add(tool_position, tool_offset_back)
+        offset_point.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offset_point)))
+
+        # 5. 장착 직전까지 이동
+        setdata.append(self.make_str("MoveOffset", self.format_array(tool_offset_front)))
+        
+        # 6. 속도 매우느림으로 변경
+        setdata.append(self.make_str("ChangeParam",  1))
+
+        # 7. 장착
+        setdata.append(self.make_str("MoveOffset", self.format_array(tool_offset_front)))
+
+        # 8. 속도 보통으로 변경
+        setdata.append(self.make_str("ChangeParam", 0))
+
+        # 9. 위로
+        setdata.append(self.make_str("MoveOffset",  self.format_array(self.tool_offset_upward)))
+        
+        # 10. tool 변경
+        setdata.append(self.make_str("ToolNum",  tool_index))
+        
+        # 11. 뒤로 이동
+        setdata.append(self.make_str("MoveOffset",  self.format_array(tool_offset_back)))
+        print(tool_index)
+
+        setdata = '='.join(setdata)        
+        socke.send_data(setdata) 
 
     def tool_return(self, tool_coord, posture):
         if tool_coord[0] <= 0: # 방향 반대로
@@ -229,6 +279,50 @@ class Action:
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4, setdata5, setdata6, setdata7, setdata8, setdata9])
         socke.send_data(setdata)
 
+    def action_tool_return_45(self, tool_position, posture):                     
+        setdata = [''] * 8
+        
+        # 기본툴로 변경
+        setdata.append(self.make_str("ToolBase",  0))
+
+        # 3. 그리퍼 열기
+        setdata.append(self.make_str("Gripper", True))
+        
+        
+        tool_offset_back = [0]*6
+        tool_offset_back[0] = -self.tool_offset_45 * np.cos((90+tool_position[3]) * np.pi/180)
+        tool_offset_back[1] = -self.tool_offset_45 * np.sin((90+tool_position[3]) * np.pi/180)
+
+        tool_offset_front = [0]*6
+        tool_offset_front[0] = self.tool_offset_45 * np.cos((90+tool_position[3]) * np.pi/180)
+        tool_offset_front[1] = self.tool_offset_45 * np.sin((90+tool_position[3]) * np.pi/180)
+
+        # 위, 뒤
+        offset_point = self.list_add(self.list_add(tool_position, self.tool_offset_upward),tool_offset_back)
+        offset_point.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offset_point)))
+
+        # 위
+        setdata.append(self.make_str("MoveOffset", self.format_array(tool_offset_front)))
+        
+
+
+        # 7. 탈착
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.tool_offset_downward)))
+
+        # 8. 속도 매우느림으로 변경
+        setdata.append(self.make_str("ChangeParam", 1))
+
+        # 9. 뒤로
+        setdata.append(self.make_str("MoveOffset",  self.format_array(tool_offset_back)))
+
+        # 6. 속도 보통으로 변경
+        setdata.append(self.make_str("ChangeParam",  0))
+
+
+        setdata = '='.join(setdata)        
+        socke.send_data(setdata) 
+
 
     def action_pick(self, grip_mode, material_coord, posture):
         after_pick = list(deepcopy(material_coord))
@@ -256,6 +350,36 @@ class Action:
         offset_point_2 = self.list_add(offset_point_2, self.pnp_offset_back)
         offset_point_2.append(posture)
         setdata5 = self.make_str("MovePoint", self.format_array(offset_point_2))
+
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+
+        setdata = '='.join([setdata0, setdata1, setdata2, setdata3, setdata4, setdata5])
+        socke.send_data(setdata)
+
+    def action_pick_case(self, index, material_coord, posture):
+        after_pick = list(deepcopy(material_coord))
+        # after_pick[3:6] = -90, 0, 180 # 양상추 잡는 각도가 반대라 일단 보류 -> 추후 case 나누거나 중간 점 찾는 등으로 해결
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+        
+        setdata0 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
+
+        # 2-1. 그리퍼
+        setdata1 = self.make_str("Gripper", True)
+        # 2-2. "재료 위치 + 오프셋"으로 이동
+        offset_point = self.list_add(material_coord, self.pnp_offset_up)
+        offset_point.append(posture)
+        setdata2 = self.make_str("MovePoint", self.format_array(offset_point))
+            
+        # 2-3. 재료 위치로 이동 (오프셋만큼 이동)
+        setdata3 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+
+        # 3. gripper
+        setdata4 = self.make_str("Gripper", False)
+
+        # 4. 오프셋
+        setdata5 = self.make_str("MoveOffset", self.format_array(self.pnp_case_offset_up))
 
         if material_coord[0] <= 0: # 방향 반대로
             self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
@@ -480,7 +604,6 @@ class Action:
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
 
-
     def action_test_pos(self, target_pos, posture):
         # 1. 그리퍼 열기
         setdata1 = self.make_str("Gripper", True)
@@ -557,10 +680,18 @@ class Ros():
             action.action_init_pos(target_position)
         elif action_name == "tool_get":
             action.action_tool_get(index, target_position, posture)
+        elif action_name == "tool_get_45":
+            action.action_tool_get_45(index, target_position, posture)         
+        elif action_name == "tool_return_45":
+            action.action_tool_return_45(target_position, posture)                 
+
         elif action_name == "vision":
             action.action_vision(target_position, posture)
         elif action_name == "pick":
-            action.action_pick(index, target_position, posture)
+            if index == 9:
+                action.action_pick_case(index, target_position, posture)
+            else:
+                action.action_pick(index, target_position, posture)            
         elif action_name == "place":
             action.action_place(target_position, posture)
         elif action_name == "tool_return":
@@ -571,6 +702,8 @@ class Ros():
             action.action_bread_close(target_position, target_position_2, posture)                            
         elif action_name == "sauce_place":
             action.action_sauce_place(target_position, posture) 
+
+
 
         elif action_name == "grill_open":
             action.action_grill_open(traj, posture)     

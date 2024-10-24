@@ -18,73 +18,167 @@ class Task:
         # task['material'] = MaterialList[material]
         return task
 
+    # def order_to_task(self, order):
+    #     # order.append(1)
+    #     tasks = [self.templete[0]]
+    #     # tasks = []
+
+    #     # case
+    #     tool_get = self.make_task(1, 9)
+    #     vision = self.make_task(2, 9)
+    #     pnp = self.make_task(3, 9)
+    #     tasks.append(tool_get)
+    #     tasks.append(vision)
+    #     tasks.append(pnp)
+
+    #     for material, repeat in enumerate(order):
+    #         if material == 0:
+    #             if repeat:
+    #                 tool_get = self.make_task(1, material)
+    #                 tasks.append(tool_get)
+
+    #                 pnp = self.make_task(3, material)
+    #                 tasks.append(pnp)
+
+    #                 tool_return = self.make_task(4, material)
+    #                 tasks.append(tool_return)
+                    
+    #         elif material == 1:
+    #             if repeat:
+    #                 tool_get = self.make_task(1, material)
+    #                 tasks.append(tool_get)
+
+    #                 pnp = self.make_task(3, material)
+
+    #                 task = [pnp] * repeat
+                    
+    #                 tasks.extend(task)
+
+    #                 tool_return = self.make_task(4, material)
+    #                 tasks.append(tool_return)
+
+    #         elif material == 2 or material == 5 or material == 6:
+    #             if repeat:
+    #                 pnp = self.make_task(3, material)
+
+    #                 task = [pnp] * repeat
+                    
+    #                 tasks.extend(task)
+
+    #                 tool_return = self.make_task(4, material)
+    #                 tasks.append(tool_return)
+
+    #         else:
+    #             if repeat:
+    #                 tool_get = self.make_task(1, material)
+    #                 tasks.append(tool_get)
+    #                 vision = self.make_task(2, material)
+    #                 pnp = self.make_task(3, material)
+
+    #                 task = [vision, pnp] * repeat
+                    
+    #                 tasks.extend(task)
+
+    #                 tool_return = self.make_task(4, material)
+    #                 tasks.append(tool_return)
+
+    #         # 좌우 이동 시 꼬임 방지
+    #         if material == 1 or material == 2 or material == 4 or material == 6:
+    #             tasks.append(self.templete[0])
+
+            
+    #     # # bread
+    #     # tool_get = self.make_task(1, 0)
+    #     # tasks.append(tool_get)
+
+    #     # vision = self.make_task(2, 0)
+    #     # tasks.append(vision)
+
+    #     # pnp = self.make_task(3, 0)
+    #     # tasks.append(pnp)
+
+    #     # tool_return = self.make_task(4, 0)
+    #     # tasks.append(tool_return)
+
+    #     # 좌우 이동 시 꼬임 방지
+    #     tasks.append(self.templete[0])
+
+    #     finish = self.make_task(5, 0)
+    #     tasks.append(finish)
+
+    #     return tasks
+    
+
+
     def order_to_task(self, order):
         # order.append(1)
-        tasks = [self.templete[0]]
-        # tasks = []
+        # tasks = [self.templete[0]]
+        tasks = []
 
         # case
         tool_get = self.make_task(1, 9)
         vision = self.make_task(2, 9)
         pnp = self.make_task(3, 9)
+        tool_return = self.make_task(4, 9)
         tasks.append(tool_get)
         tasks.append(vision)
         tasks.append(pnp)
+        tasks.append(tool_return)
 
-        for material, repeat in enumerate(order):
-            if material == 0:
-                if repeat:
-                    tool_get = self.make_task(1, material)
-                    tasks.append(tool_get)
+        # for material, repeat in enumerate(order):
+        #     if material == 0:
+        #         if repeat:
+        #             tool_get = self.make_task(1, material)
+        #             tasks.append(tool_get)
 
-                    pnp = self.make_task(3, material)
-                    tasks.append(pnp)
+        #             pnp = self.make_task(3, material)
+        #             tasks.append(pnp)
 
-                    tool_return = self.make_task(4, material)
-                    tasks.append(tool_return)
+        #             tool_return = self.make_task(4, material)
+        #             tasks.append(tool_return)
                     
-            elif material == 1:
-                if repeat:
-                    tool_get = self.make_task(1, material)
-                    tasks.append(tool_get)
+        #     elif material == 1:
+        #         if repeat:
+        #             tool_get = self.make_task(1, material)
+        #             tasks.append(tool_get)
 
-                    pnp = self.make_task(3, material)
+        #             pnp = self.make_task(3, material)
 
-                    task = [pnp] * repeat
+        #             task = [pnp] * repeat
                     
-                    tasks.extend(task)
+        #             tasks.extend(task)
 
-                    tool_return = self.make_task(4, material)
-                    tasks.append(tool_return)
+        #             tool_return = self.make_task(4, material)
+        #             tasks.append(tool_return)
 
-            elif material == 2 or material == 5 or material == 6:
-                if repeat:
-                    pnp = self.make_task(3, material)
+        #     elif material == 2 or material == 5 or material == 6:
+        #         if repeat:
+        #             pnp = self.make_task(3, material)
 
-                    task = [pnp] * repeat
+        #             task = [pnp] * repeat
                     
-                    tasks.extend(task)
+        #             tasks.extend(task)
 
-                    tool_return = self.make_task(4, material)
-                    tasks.append(tool_return)
+        #             tool_return = self.make_task(4, material)
+        #             tasks.append(tool_return)
 
-            else:
-                if repeat:
-                    tool_get = self.make_task(1, material)
-                    tasks.append(tool_get)
-                    vision = self.make_task(2, material)
-                    pnp = self.make_task(3, material)
+        #     else:
+        #         if repeat:
+        #             tool_get = self.make_task(1, material)
+        #             tasks.append(tool_get)
+        #             vision = self.make_task(2, material)
+        #             pnp = self.make_task(3, material)
 
-                    task = [vision, pnp] * repeat
+        #             task = [vision, pnp] * repeat
                     
-                    tasks.extend(task)
+        #             tasks.extend(task)
 
-                    tool_return = self.make_task(4, material)
-                    tasks.append(tool_return)
+        #             tool_return = self.make_task(4, material)
+        #             tasks.append(tool_return)
 
-            # 좌우 이동 시 꼬임 방지
-            if material == 1 or material == 2 or material == 4 or material == 6:
-                tasks.append(self.templete[0])
+        #     # 좌우 이동 시 꼬임 방지
+        #     if material == 1 or material == 2 or material == 4 or material == 6:
+        #         tasks.append(self.templete[0])
 
             
         # # bread
@@ -101,13 +195,12 @@ class Task:
         # tasks.append(tool_return)
 
         # 좌우 이동 시 꼬임 방지
-        tasks.append(self.templete[0])
+        # tasks.append(self.templete[0])
 
-        finish = self.make_task(5, 0)
-        tasks.append(finish)
+        # finish = self.make_task(5, 0)
+        # tasks.append(finish)
 
         return tasks
-    
 
 # def main():
 
