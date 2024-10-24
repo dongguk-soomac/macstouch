@@ -306,7 +306,7 @@ def create_second_page():
         )
 
         with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
-            file.write(f"menu_index = [{menu_num}]\n")
+            file.write(f"page = 2\nmenu_index = [{menu_num}]\nmenu_count = [{menu_num}]")
             file.close()
 
     window.resizable(False, False)

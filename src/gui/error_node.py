@@ -16,13 +16,13 @@ def publish_error_complete():
     error_complete_pub.publish(message)
 
 def callback(msg):
-    win_width = 350
-    wun_height = 400
-    win_x = 540
-    win_y = 960
+    win_width = 800
+    win_height = 400
+    win_x = int(540 - win_width/2)
+    win_y = int(960 - win_height/2)
     window = Tk()
     window.title("Menu Publish & Error")
-    window.geometry("{win_width}x{win_height}+{win_x}")  # 창 크기 설정
+    window.geometry(f"{win_width}x{win_height}+{win_x}+{win_y}")  # 창 크기 설정
 
     # "Error" 텍스트를 출력할 라벨 생성 (버튼 위에 위치)
     error_label = Label(window, text=msg.data, fg="black", font=("Arial", 20))

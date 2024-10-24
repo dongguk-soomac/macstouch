@@ -8,7 +8,7 @@ from time import sleep
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame3")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame3")
 
 def relative_to_assets_1(path: str) -> Path:
     return ASSETS_PATH_1 / Path(path)
@@ -19,7 +19,7 @@ images = {}
 
 # 페이지 전환 함수
 def open_second_page(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/second_page.py'])
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/second_page.py'])
     sleep(1)
     window.destroy()
 

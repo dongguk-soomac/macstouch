@@ -11,6 +11,7 @@ from selected_menu import menu_index
 # from macstouch.msg import order
 from PIL import Image, ImageTk
 
+
 #변수 선언
 tempo_menu = []
 
@@ -25,13 +26,17 @@ max_menu_limit = 9
 
 custum_menu_list = []
 
-menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "소스", "토마토", "양상추", '']
-price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
+menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "토마토", "양상추", "햄버거 소스", "바베큐 소스"]
+price_list2button = [700, 1200, 400, 500, 500, 600, 500, 200, 200] 
 
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets")
+
+def relative_to_assets_1(path: str) -> Path:
+    return ASSETS_PATH_1 / Path(path)
 
 from menu_info import menu_list, price_list 
 
@@ -39,17 +44,16 @@ def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
 def open_second_page(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
     sleep(1)
     window.destroy() 
 
 def resize_image(image_path, scale=2/3):
-    """이미지의 크기를 scale 비율만큼 줄임"""
     img = Image.open(image_path)
     new_size = (int(img.width * scale), int(img.height * scale))
     img = img.resize(new_size, Image.Resampling.LANCZOS)  # ANTIALIAS 대신 Image.Resampling.LANCZOS 사용
@@ -100,9 +104,6 @@ def create_third_page():
 
     ########################## 햄버거 재료 버튼 ###############################
 
-    # 이미지 리사이즈 (2/3 크기)
-    button_image = resize_image(relative_to_assets_2("button_1.png"))
-
     # 버튼 크기 및 배치 설정
     button_width = 340  # 버튼 너비 (화면 크기에 맞춰 조정)
     button_height = 335  # 버튼 높이 (화면 크기에 맞춰 조정)
@@ -121,10 +122,17 @@ def create_third_page():
         (720, 1006)  # 세 번째 줄 세 번째 버튼 좌표
     ]
 
-    # buttons = []
-    # texts= [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    button_images = []  # 이미지 객체를 저장할 리스트
+
     for i in range(9):
         # 버튼 생성
+        button_image_original = Image.open(relative_to_assets_1(f"download({i}).png"))
+        button_image_resized = button_image_original.resize((335, 335))  # 원하는 크기로 리사이즈
+        button_image = ImageTk.PhotoImage(button_image_resized)
+
+        # 이미지 객체를 리스트에 저장하여 메모리에서 유지
+        button_images.append(button_image)
+
         button = Button(
             window,
             image=button_image,
@@ -140,24 +148,7 @@ def create_third_page():
             height=button_height
         )
 
-        menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "소스", "토마토", "양상추", '']
-        price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
-
-        # 버튼 위에 텍스트를 Label로 생성
-        label = Label(
-            window,
-            text="{}\n{}".format(menu_list2button[i], price_list2button[i]),
-            bg="#FFFFFF",  # 배경색 설정
-            fg="black",  # 글자색 설정
-            font=("Inter", 20 * -1)
-        )
-        label.place(
-            x=positions[i][0] + button_width // 2 - 15,  # 텍스트의 위치를 버튼 중앙으로 조정
-            y=positions[i][1] + button_height // 2 - 30
-        )
-
-
-    window.resizable(False, False)
+    # window.resizable(False, False)
 
     ###############################################
 
@@ -216,66 +207,75 @@ def create_third_page():
         image=image_image_5
     )
 
+    menu_count = [0] * len(menu_list2button)
+
     def print_menu(menu_num):
         global tempo_menu, price_text_id, num_text_id, menu_text_id, total_text_id
         global max_menu_limit, menu_offset, menu_y_position, custum_menu_list
 
-        custum_menu_list.append(menu_num)
+        # 선택된 메뉴 수량 증가
+        menu_count[menu_num] += 1
 
-        tempo_menu.append(price_list2button[menu_num])
-        print(tempo_menu)
-        # canvas2.delete()
+        print(menu_count)
 
-        if len(tempo_menu) > max_menu_limit:
-            print("최대 메뉴 개수(8개)를 초과할 수 없습니다.")
-            return
+        # 메뉴 수량이 처음 추가될 때만 리스트에 메뉴 번호 추가
+        if menu_count[menu_num] == 1:
+            custum_menu_list.append(menu_num)
+            tempo_menu.append(price_list2button[menu_num])
+
+        print(f"현재 메뉴 선택: {menu_list2button[menu_num]}, 수량: {menu_count[menu_num]}")
         
         if total_text_id:
             canvas2.delete(total_text_id)
-            
-        # price list 
-        price_text_id = canvas2.create_text(
-            754.0,
-            menu_y_position,
-            anchor="nw",
-            text=price_list2button[menu_num],
-            fill="#000000",
-            font=("Inter", 24 * -1)
-        )
+        
+        # 기존 텍스트 삭제 후 재작성
+        canvas2.delete("menu_text")
+        
+        # 메뉴 목록과 수량을 출력
+        y_pos = menu_y_position
+        for idx in custum_menu_list:
+            canvas2.create_text(
+                81.0,
+                y_pos,
+                anchor="nw",
+                text=f"{menu_list2button[idx]}",
+                fill="#000000",
+                font=("Inter", 24 * -1),
+                tag="menu_text"
+            )
 
-        # num
-        num_text_id = canvas2.create_text(
-            544.0,
-            menu_y_position,
-            anchor="nw",
-            text='1',
-            fill="#000000",
-            font=("Inter", 24 * -1)
-        )
+            canvas2.create_text(
+                544.0,
+                y_pos,
+                anchor="nw",
+                text=f"{menu_count[idx]}",
+                fill="#000000",
+                font=("Inter", 24 * -1),
+                tag="menu_text"
+            )
 
-        # menu list
-        menu_text_id = canvas2.create_text(
-            81.0,
-            menu_y_position,
-            anchor="nw",
-            text=menu_list2button[menu_num],
-            fill="#000000",
-            font=("Inter", 24 * -1)
-        )
+            canvas2.create_text(
+                754.0,
+                y_pos,
+                anchor="nw",
+                text=f"{price_list2button[idx] * menu_count[idx]}",
+                fill="#000000",
+                font=("Inter", 24 * -1),
+                tag="menu_text"
+            )
+            y_pos += menu_offset
 
         total_text_id = canvas2.create_text(
             81.0,
             1800.0,
             anchor="nw",
-            text="합계 : {}원".format(sum(tempo_menu)),
+            text="합계 : {}원".format(sum([price_list2button[idx] * menu_count[idx] for idx in custum_menu_list])),
             fill="#000000",
             font=("Inter", 35 * -1)
         )
 
-        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
-            file.write(f"menu_index = {custum_menu_list}\n")
-
-            menu_y_position += menu_offset
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+            file.write(f"page = 3\nmenu_index = {custum_menu_list}\nmenu_count = {menu_count}")
 
     window.resizable(False, False)
     window.mainloop()
