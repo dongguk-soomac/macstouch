@@ -109,6 +109,13 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
         pick_coord[0] = 694.5 - 40 - 42 * mode
         rz, ry, rx = -90, 0, -180
 
+    if material_index == 9: # case
+        z_offset_for_each_index = 0
+
+        pick_coord[0] = 0
+        pick_coord[1] = 409.583
+        rz, ry, rx = materail_coord[3:6]
+
     # z방향 pick좌표 설정
     pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
 
@@ -126,19 +133,24 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
 class ManageCoord:
     def __init__(self):
         global coordinates_data
-        self.place_coord = deepcopy(coordinates_data["place_coord"]) # 초기 place 좌표        
+        self.case_coord = deepcopy(coordinates_data["case_coord"])
+        self.place_coord = deepcopy(coordinates_data["place_coord"]) # 초기 place 좌표       
         self.bread_coord = deepcopy(coordinates_data["bread_coord"]) # 초기 빵 좌표
-        self.meat_coord = deepcopy(coordinates_data["meat_coord"]) # 초기 빵 좌표
+        self.meat_coord = deepcopy(coordinates_data["meat_coord"]) # 초기 패티 좌표
+        self.grill_meat_coord = deepcopy(coordinates_data["grill_meat_coord"]) # 초기 그릴 패티 좌표  
 
+        self.bread_lid_coord = deepcopy(coordinates_data["bread_lid_coord"]) # 빵 뚜껑 좌표        
         self.material_height = deepcopy(coordinates_data["material_height"]) # plac/e 높이 조절을 위한 재료 높이, 튜닝 필요
         self.bread_offset = deepcopy(coordinates_data["bread_offset"]) # 빵 간격, 튜닝 필요
         self.meat_offset = deepcopy(coordinates_data["meat_offset"]) # 패티 간격, 튜닝 필요
-        self.bread_lid_coord = deepcopy(coordinates_data["bread_lid_coord"]) # 빵 뚜껑이 보관될 위치
+        self.grill_meat_offset = deepcopy(coordinates_data["grill_meat_offset"]) # 그릴 패티 간격, 튜닝 필요  
 
 
-        # 빵, 패티의 초기 index 설정
+
+        # 빵, 패티, 그릴 패티의 초기 index 설정
         self.bread_index = 0
         self.meat_index = 0     
+        self.grill_meat_index = 0           
 
         # 토마토, 피클의 place 위치 보정
         self.tomato_offset = 20
@@ -147,6 +159,27 @@ class ManageCoord:
         self.pickle_count_bool = 0
         self.pickle_num = 0
         self.theta = None
+
+    def make_meat_coord_list(self):
+        meat_index_is_0 = self.meat_coord
+        meat_index_is_1 = self.meat_coord
+        meat_index_is_2 = self.meat_coord # 기준
+        meat_index_is_3 = self.meat_coord
+
+        meat_index_is_0[2] += self.meat_offset[2]
+        
+        meat_index_is_1[2] += self.meat_offset[2]
+        meat_index_is_1[0] -= self.meat_offset[0]
+        
+        meat_index_is_3[0] -= self.meat_offset[0]
+
+        self.meat_coord_list = [meat_index_is_0, meat_index_is_1, meat_index_is_2, meat_index_is_3]
+
+        # about grill meat
+        grill_meat_index_is_0 = self.grill_meat_coord
+        grill_meat_index_is_1 = self.grill_meat_coord
+        grill_meat_index_is_1[1] += self.grill_meat_offset[1]
+        self.grill_meat_coord_list = [grill_meat_index_is_0, grill_meat_index_is_1]
 
     def change_bread_pick_coord(self):
         self.bread_index += 1
@@ -160,14 +193,20 @@ class ManageCoord:
             self.bread_coord[1] -= self.bread_offset[1]
 
     def change_meat_pick_coord(self):
-        self.meat_index += 1
-        if self.meat_index <=2:
-            self.meat_coord[0] -= self.meat_offset[0]  
-        elif self.meat_index == 3:
-            self.reset_meat_coord()
+        if self.meat_index >= 3:
+            print("meat가 모두 소진되었습니다.") 
+
+        else:
+            self.meat_index += 1
+
+    def change_grill_meat_pick_coord(self):
+        if self.grill_meat_index == 0:
+            self.grill_meat_index = 1
+        
+        elif self.grill_meat_index == 1:
+            self.grill_meat_index = 0            
 
     def change_place_coord(self, material_index):
-        
         self.place_coord[2] += self.material_height[material_index]
 
     def reset_place_coord(self):
@@ -180,7 +219,11 @@ class ManageCoord:
 
     def reset_meat_coord(self):
         self.meat_index = 0        
-        self.meat_coord = deepcopy(coordinates_data["meat_coord"]) # 초기 빵 좌표
+        self.meat_coord = deepcopy(coordinates_data["meat_coord"]) # 초기 패티 좌표
+
+    def reset_meat_coord(self):
+        self.grill_meat_index = 0        
+        self.grill_meat_coord = deepcopy(coordinates_data["grill_meat_coord"]) # 초기 그릴 패티 좌표
 
     def tomato_place(self):
         tomato_place_coord = deepcopy(self.place_coord)
@@ -227,39 +270,46 @@ class ManageCoord:
 
 class Control:
     def __init__(self) -> None:
-        # ManageCoord class
+        # coord setting
         self.managecoord = ManageCoord()
+        self.coord_set()
 
+        # ros setting : sub
+        rospy.Subscriber('/control_req', control_info, self.control_cb)
+        rospy.Subscriber('/action_done', Bool, self.action_done_cb)
+
+        # ros setting : pub
+        self.action_req = rospy.Publisher('/action_req', action_info, queue_size=10)
+        self.done = rospy.Publisher('/done', Bool, queue_size=10)
+        self.action_state = 0
+        rospy.spin()
+
+    def coord_set(self):
         # json 파일의 고정 좌표값 저장
         global coordinates_data
-        self.init_pos = coordinates_data["init_pos"]
-        self.tool_coord = coordinates_data["tool_coord"] # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
-        # self.vision_coord = coordinates_data["vision_coord"]
-        tool_list = coordinates_data["tool_length"]
+        self.init_pos = deepcopy(coordinates_data["init_pos"])
+        self.tool_coord = deepcopy(coordinates_data["tool_coord"]) # 2차원 배열이며, 재료에 따른 도구별 저장 순서는 MaterialList를 따름
+        self.grill_open_traj = deepcopy(coordinates_data["grill_open_traj"])
+        self.grill_close_traj = deepcopy(coordinates_data["grill_close_traj"])    
+        self.lib_close_traj = deepcopy(coordinates_data["lib_close_traj"])
+        self.push_traj = deepcopy(coordinates_data["push_traj"])
+        tool_length = deepcopy(coordinates_data["tool_length"])
 
-        self.vision_coord = np.zeros((9, 6))
+        self.vision_coord = np.zeros((10, 6))
         for i in range(9):
-            self.vision_coord[i][0] = 600 + tool_list[i]
+            self.vision_coord[i][0] = 600 + tool_length[i]
             self.vision_coord[i][1] = self.tool_coord[i][1]
             self.vision_coord[i][2] = 438
             self.vision_coord[i][3] = self.tool_coord[i][3]
             self.vision_coord[i][4] = self.tool_coord[i][4]
             self.vision_coord[i][5] = self.tool_coord[i][5]
-            
             if self.tool_coord[i][0] <= 0:
                 self.tool_coord[i][0] -= 158.2       
             else:
                 self.tool_coord[i][0] += 158.2
 
-        # ros setting
-        rospy.Subscriber('/control_req', control_info, self.control_cb)
-        rospy.Subscriber('/action_done', Bool, self.action_done_cb)
-
-        self.action_req = rospy.Publisher('/action_req', action_info, queue_size=10)
-        self.done = rospy.Publisher('/done', Bool, queue_size=10)
-        self.back_motion = False
-        self.action_state = 0
-        rospy.spin()
+        self.vision_coord[9] = deepcopy(coordinates_data["case_vision_coord"])
+        self.vision_coord[9][1] += tool_length[9]
 
     def control_cb(self, data):
         print('control_req topic')
@@ -272,229 +322,322 @@ class Control:
         self.action_state = 1
         self.action()
 
-    def action(self):
-        if self.mode == 'init_pos':
-            if self.action_state == 1:
-                print('##### [Mode : init_pos] step_1 : init_pos action')
-                self.control_action_pub('init_pos', None, None, self.init_pos, None)     
-                self.action_state += 1
+    def pub_done(self):
+        msg = Bool()
+        msg.data = True
+        self.done.publish(msg)
+        self.action_state += 1  
 
-            elif self.action_state == 2:
-                print('##### [Mode : init_pos] step_2 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1
+    def mode_init_pos(self):
+        if self.action_state == 1:
+            print('##### [Mode : init_pos] step_1 : init_pos action')
+            self.control_action_pub('init_pos', coord = self.init_pos)     
+            self.action_state += 1
+
+        elif self.action_state == 2:
+            print('##### [Mode : init_pos] step_2 : done')
+            self.pub_done()
+
+        else:
+            pass    
+            
+    def mode_vision(self):
+        if self.action_state == 1:
+            print('##### [Mode : vision] step_1 : vision action')
+            if self.material == 9:
+                posture = 2
             else:
-                pass
+                posture = 6 
+                
 
-        elif self.mode == 'vision':
-            if self.action_state == 1:
-                print('##### [Mode : vision] step_1 : vision action')
-                self.control_action_pub('vision', None, None, self.vision_coord[self.material], None) # material -> None / grip_size -< None            
-                self.action_state += 1
+            self.control_action_pub('vision', coord=self.vision_coord[self.material], posture=posture) # material -> None / grip_size -< None            
+            self.action_state += 1
 
-            elif self.action_state == 2:
-                print('##### [Mode : vision] step_2 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1
-            else:
-                pass      
+        elif self.action_state == 2:
+            print('##### [Mode : vision] step_2 : done')
+            self.pub_done()
+        else:
+            pass         
 
-        ###### sauce 동작 ######
-        elif self.mode == 'pnp' and (self.material == 2 or self.material == 5 or self.material == 6):
-            if self.action_state == 1: # pick 동작      
-                self.control_action_pub('tool_get', self.material, None, self.tool_coord[self.material], None, posture=2)
-                print('##### [Mode : pnp] step_1 : sauce pick action')                                
-                self.action_state += 1
+    def mode_pnp_sauce(self):
+        if self.action_state == 1: # pick 동작      
+            self.control_action_pub('tool_get', material = self.material, coord = self.tool_coord[self.material], posture=2)
+            print('##### [Mode : pnp] step_1 : sauce pick action')                                
+            self.action_state += 1
 
-            elif self.action_state == 2: # place 동작
-                print('##### [Mode : pnp] step_2 : sauce place action') 
-                self.control_action_pub('sauce_place', None, None, self.managecoord.sauce_place_coord(), None, posture=2)
-                print('Place coord : ', self.managecoord.sauce_place_coord())
-                self.action_state += 1
-                self.managecoord.change_place_coord(self.material) # place 위치 상승
+        elif self.action_state == 2: # place 동작
+            print('##### [Mode : pnp] step_2 : sauce place action') 
+            self.control_action_pub('sauce_place', coord=self.managecoord.sauce_place_coord(), posture=2)
 
-            elif self.action_state == 3:
-                print('##### [Mode : pnp] step_4 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1
+            print('Place coord : ', self.managecoord.sauce_place_coord())
+            self.action_state += 1
+            self.managecoord.change_place_coord(self.material) # place 위치 상승
 
-        ###### pnp 동작 ######
-        elif self.mode == 'pnp': # pnp 동작["bread", "meat", "pickle", "onion", "tomato", "lettuce"]                            
-                if self.action_state == 1: # pick 동작
-                    ### 좌표 설정
-                    if self.material == 0: # bread : 고정 좌표
-                        pick_coord = deepcopy(self.managecoord.bread_coord)
-                        self.managecoord.change_bread_pick_coord()
-                    
-                    elif self.material == 1: # meat : 고정 좌표
-                        pick_coord = deepcopy(self.managecoord.meat_coord)
-                        self.managecoord.change_meat_pick_coord()
+        elif self.action_state == 3:
+            print('##### [Mode : pnp] step_4 : done')
+            self.pub_done()
 
-                    else: # 변동 좌표에 대한 pick_coord 설정
-                        pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord), self.grip_mode)
-
-                    print('##### [Mode : pnp] step_2 : pick action')
-                    print(pick_coord)
-                    
-                    if self.material == 0 or self.material == 1:
-                        self.control_action_pub('pick', None, self.grip_mode, pick_coord, None, posture=6)
-                    else:
-                        self.control_action_pub('pick', None, self.grip_mode, pick_coord, None, posture=2) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
-                    
-                    
-                    self.action_state += 1
-                     
-                elif self.action_state == 2: # place 동작
-                    if self.material == 0: # 빵
-                        print('##### [Mode : pnp] step_3 : bread_place action') 
-                        self.control_action_pub('bread_place', self.material, None, self.managecoord.place_coord, self.managecoord.bread_lid_coord, posture=6) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('Place coord : ', self.managecoord.place_coord)
-                        self.action_state += 1
-                        self.managecoord.change_place_coord(self.material) # place 위치 상승
-                        
-                    elif self.material == 1: # 패티
-                        print('##### [Mode : pnp] step_3 : place action') 
-                        self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None, posture=6) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('Place coord : ', self.managecoord.place_coord)
-                        self.action_state += 1
-                        self.managecoord.change_place_coord(self.material) # place 위치 상승
-                    
-                    elif self.material == 3: # 피클
-                        print('##### [Mode : pnp] step_3 : place action') 
-
-                        self.managecoord.pickle_count(self.size)
-                        self.control_action_pub('place', self.material, None, self.managecoord.pickle_place(), None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('Place coord : ', self.managecoord.pickle_place())
-                        self.action_state += 1
-                        if self.managecoord.pickle_count_bool == 0:
-                            self.managecoord.change_place_coord(self.material) # place 위치 상승
-
-                    elif self.material == 7: # 토마토
-                        print('##### [Mode : pnp] step_3 : place action') 
-                        self.control_action_pub('place', self.material, None, self.managecoord.tomato_place(), None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('Place coord : ', self.managecoord.tomato_place())
-                        self.action_state += 1
-                        self.managecoord.change_place_coord(self.material) # place 위치 상승
-                                                                
-                    else: # 빵 잘되면 패티도 6번으로 
-                        print('##### [Mode : pnp] step_3 : place action') 
-                        self.control_action_pub('place', self.material, None, self.managecoord.place_coord, None, posture=2) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
-                        print('Place coord : ', self.managecoord.place_coord)
-                        self.action_state += 1
-                        self.managecoord.change_place_coord(self.material) # place 위치 상승
-
-                elif self.action_state == 3:
-                    print('##### [Mode : pnp] step_4 : done')
-                    msg = Bool()
-                    msg.data = True
-                    self.done.publish(msg)
-                    self.action_state += 1  
-
-        elif self.mode == 'tool_return':
+    def mode_tool_return(self):
             if self.action_state == 1:
                 print('##### [Mode : tool_return] step_1 : tool_return')
                 if self.material == 0 or self.material == 1 or self.material == 2 or self.material == 5 or self.material == 6: # 빵 혹은 패티                
-                    self.control_action_pub('tool_return', None, None, self.tool_coord[self.material], None, posture=2)     
+                    self.control_action_pub('tool_return', coord=self.tool_coord[self.material], posture=2)     
                 else:
-                    self.control_action_pub('tool_return', None, None, self.tool_coord[self.material], None)    
-
+                    self.control_action_pub('tool_return', coord=self.tool_coord[self.material])    
                 self.action_state += 1
 
             elif self.action_state == 2:
                 print('##### [Mode : tool_return] step_2 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1
+                self.pub_done()
             else:
                 pass          
+
+    def mode_tool_get(self):
+        if self.action_state == 1:
+            print('##### [Mode : tool_get] step_1 : tool_get')
+            if self.material == 0 or self.material == 1: # 빵 혹은 패티
+                self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material], posture=2)            
+            else:
+                self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material])            
+            self.action_state += 1                        
+
+        elif self.action_state == 2:
+            print('##### [Mode : tool_get] step_2 : done')
+            self.pub_done()
+        else:
+            pass          
+
+    def mode_test_pos(self):
+        if self.action_state == 1:
+            print('##### [Mode : finish] step_1 : test_pos')
+            self.control_action_pub('test_pos', coord=self.coord)            
+            self.action_state += 1
+
+        elif self.action_state == 2:
+            print('##### [Mode : finish] step_2 : done')
+            self.pub_done()    
+        else:
+            pass    
+
+    def mode_pnp(self):
+            if self.action_state == 1: # pick 동작
+                print('##### [Mode : pnp] step_1 : pick action')                
+                pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord), self.grip_mode)
+                print(pick_coord)
+                self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=2) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
+                self.action_state += 1
+                    
+            elif self.action_state == 2: # place 동작
+                # 재료에 따른 place 위치 보정
+                if self.material == 3: # 피클
+                    self.managecoord.pickle_count(self.size)
+                    place_coord = self.managecoord.pickle_place()
+                    if self.managecoord.pickle_count_bool == 0: # place 위치 상승
+                        self.managecoord.change_place_coord(self.material) 
+
+                elif self.material == 7: # 토마토
+                    place_coord = self.managecoord.tomato_place()
+                    self.managecoord.change_place_coord(self.material) # place 위치 상승
+
+                elif self.material == 9: # case
+                    place_coord = self.managecoord.case_coord()
+
+                else:
+                    place_coord = deepcopy(self.managecoord.place_coord)
+                    self.managecoord.change_place_coord(self.material) # place 위치 상승     
+
+                print('##### [Mode : pnp] step_2 : place action') 
+                self.control_action_pub('place', material=self.material, coord=place_coord, posture=2)  
+                print('Place coord : ', place_coord)
+                self.action_state += 1
+
+            elif self.action_state == 3:
+                print('##### [Mode : pnp] step_3 : done')
+                self.pub_done()
+
+    def mode_pnp_bread(self):
+            if self.action_state == 1: # pick 동작
+                print('##### [Mode : pnp] step_1 : pick action')                
+                pick_coord = deepcopy(self.managecoord.bread_coord)
+                print(pick_coord)
+
+                self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=6)
+                self.managecoord.change_bread_pick_coord()
+                self.action_state += 1
+                    
+            elif self.action_state == 2: # place 동작
+                print('##### [Mode : pnp] step_2 : bread_place action') 
+                self.control_action_pub('bread_place', material=self.material, coord=self.managecoord.place_coord, coord_2=self.managecoord.bread_lid_coord, posture=6) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+                print('Place coord : ', self.managecoord.place_coord)
+                self.managecoord.change_place_coord(self.material) # place 위치 상승
+                self.action_state += 1                
+
+            elif self.action_state == 3:
+                print('##### [Mode : pnp] step_3 : done')
+                self.pub_done()
+
+    def mode_pnp_meat(self):
+        if self.action_state == 1: # pick 동작
+            print('##### [Mode : pnp] step_2 : pick action')
+            pick_coord = deepcopy(self.managecoord.meat_coord_list[self.managecoord.meat_index])
+            print(pick_coord)                      
+            self.managecoord.change_meat_pick_coord()
+            self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=6)
+
+            self.action_state += 1
+                
+        elif self.action_state == 2: # place 동작
+            print('##### [Mode : pnp] step_3 : place action') 
+            self.control_action_pub('place', material=self.material, coord=self.managecoord.place_coord, posture=6) # client에서는 place action 시 material index를 바탕으로 place 동작 구분    
+            print('Place coord : ', self.managecoord.place_coord)
+            self.action_state += 1
+            self.managecoord.change_place_coord(self.material) # place 위치 상승
+            
+        elif self.action_state == 3:
+            print('##### [Mode : pnp] step_4 : done')
+            self.pub_done()
+
+    def mode_finish(self):
+        if self.action_state == 1:
+            print('##### [Mode : finish] step_1 : tool_get')
+            self.control_action_pub('tool_get', coord=self.tool_coord[0])            
+            self.action_state += 1
+
+        elif self.action_state == 2:
+            print('##### [Mode : finish] step_2 : bread_close')
+            self.control_action_pub('bread_close', coord=self.managecoord.bread_lid_coord, coord_2=self.managecoord.place_coord)        
+            self.action_state += 1
+            
+        elif self.action_state == 3:
+            print('##### [Mode : tool_return] step_3 : tool_return')
+            self.control_action_pub('tool_return', self.tool_coord[0])            
+            self.action_state += 1
+
+        elif self.action_state == 4:
+            print('##### [Mode : tool_return] step_3 : tool_get')
+            self.control_action_pub('tool_return', self.tool_coord[9])            
+            self.action_state += 1
+
+        elif self.action_state == 5:
+            print('##### [Mode : finish] step_4 : lid_close')
+            self.control_action_pub('lid_close', traj=np.ravel(np.array(self.lib_close_traj)), posture=2)            
+            self.action_state += 1
+
+        elif self.action_state == 6:
+            print('##### [Mode : finish] step_5 : push')
+            self.control_action_pub('push', coord=self.push_traj[0], coord_2=self.push_traj[1], posture=2)            
+            self.action_state += 1
+
+        elif self.action_state == 7:
+            print('##### [Mode : tool_return] step_3 : tool_return')
+            self.control_action_pub('tool_return', self.tool_coord[0])            
+            self.action_state += 1
+
+        elif self.action_state == 8:
+            print('##### [Mode : finish] step_4 : done')
+            self.pub_done()
+            self.managecoord.reset_place_coord()          
+        else:
+            pass     
+
+    def mode_grill(self):
+        if self.action_state == 1:
+            print('##### [Mode : finish] step_1 : grill_open action')
+            self.control_action_pub('grill_open', traj=np.ravel(np.array(self.grill_open_traj)), posture=6)            
+            self.action_state += 1
+
+        elif self.action_state == 2:
+            print('##### [Mode : finish] step_2 : grill : pick action')
+            pick_coord = deepcopy(self.managecoord.grill_meat_coord_list[self.managecoord.grill_meat_index])
+            print(pick_coord)            
+            self.control_action_pub('pick', coord=pick_coord)
+            self.managecoord.change_grill_meat_pick_coord()            
+            self.action_state += 1
+
+        elif self.action_state == 3:
+            print('##### [Mode : finish] step_3 : grill : place action')
+            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index-1], posture=6)
+            self.managecoord.meat_index -= 1
+            self.action_state += 1
+
+        elif self.action_state == 4:
+            print('##### [Mode : finish] step_2 : grill : pick action')
+            pick_coord = deepcopy(self.managecoord.grill_meat_coord_list[self.managecoord.grill_meat_index])
+            print(pick_coord)            
+            self.control_action_pub('pick', coord=pick_coord)
+            self.managecoord.change_grill_meat_pick_coord()            
+            self.action_state += 1
+
+        elif self.action_state == 5:
+            print('##### [Mode : finish] step_3 : grill : place action')
+            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index-1], posture=6)
+            self.managecoord.meat_index -= 1
+            self.action_state += 1
+
+        elif self.action_state == 6:
+            print('##### [Mode : pnp] step_4 : grill_close action')
+            self.control_action_pub('grill_close', traj=self.grill_close_traj, posture=6)  
+            self.action_state += 1
+
+        elif self.action_state == 7: # grill is not open
+            print('##### [Mode : pnp] patty is already full')
+            self.pub_done()
+
+        else:
+            pass          
+
+
+    def action(self):
+        if self.mode == 'init_pos':
+            self.mode_init_pos()
+
+        elif self.mode == 'vision':
+            self.mode_vision()
+
+        ###### bread 동작 ###### 
+        elif self.mode == 'pnp' and self.material == 0:                             
+            self.mode_pnp_bread()
+
+        ###### meat 동작 ###### 
+        elif self.mode == 'pnp' and self.material == 1:                             
+            self.mode_pnp_meat()
+
+        ###### sauce 동작 ######
+        elif self.mode == 'pnp' and (self.material == 2 or self.material == 5 or self.material == 6):
+            self.mode_pnp_sauce()
+
+        ###### pnp 동작(피클, 양파, 토마토, 양상추)(3, 4, 7, 8) or case ######
+        elif self.mode == 'pnp':                      
+            self.mode_pnp()
+
+        elif self.mode == 'tool_return':
+            self.mode_tool_return()            
     
         elif self.mode == 'tool_get':
-            if self.action_state == 1:
-                print('##### [Mode : tool_get] step_1 : tool_get')
-                if self.material == 0 or self.material == 1: # 빵 혹은 패티
-                    self.control_action_pub('tool_get', self.material, None, self.tool_coord[self.material], None, posture=2)            
-                else:
-                    self.control_action_pub('tool_get', self.material, None, self.tool_coord[self.material], None)            
-                self.action_state += 1                        
-
-            elif self.action_state == 2:
-                print('##### [Mode : tool_get] step_2 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1
-            else:
-                pass          
+            self.mode_tool_get()
 
         elif self.mode == 'finish':
-            if self.action_state == 1:
-                print('##### [Mode : finish] step_1 : tool_get')
-                self.control_action_pub('tool_get', 0, None, self.tool_coord[0], None)            
-                self.action_state += 1
+            self.mode_finish()
 
-            elif self.action_state == 2:
-                print('##### [Mode : finish] step_2 : bread_close')
-                self.control_action_pub('bread_close', None, None, self.managecoord.bread_lid_coord, self.managecoord.place_coord)        
-                self.action_state += 1
-                
-            elif self.action_state == 3:
-                print('##### [Mode : tool_return] step_3 : tool_return')
-                self.control_action_pub('tool_return', None, None, self.tool_coord[0], None)            
-                self.action_state += 1
+        elif self.mode == 'test_pos':
+            self.mode_test_pos()
 
-            # elif self.action_state == 4:
-            #     print('##### [Mode : finish] step_4 : lid_close')
-            #     self.control_action_pub('lid_close', self.material, None, self.tool_coord[self.material], None)            
-            #     self.action_state += 1
-
-            # elif self.action_state == 5:
-            #     print('##### [Mode : finish] step_5 : push')
-            #     self.control_action_pub('push', self.material, None, self.tool_coord[self.material], None)            
-            #     self.action_state += 1
-
-            elif self.action_state == 4:
-                print('##### [Mode : finish] step_4 : done')
-                msg = Bool()
-                msg.data = True
-                self.done.publish(msg)
-                self.action_state += 1      
-                self.managecoord.reset_place_coord()          
-            else:
-                pass     
-
-        
-    
+        elif self.mode == "grill":
+            self.mode_grill()       
+            
     def action_done_cb(self, data):
         self.action()
         
-    def control_action_pub(self, action, material, grip_mode, coord, coord_2, posture=None):
+    def control_action_pub(self, action="None", material=-1, grip_mode="None", coord=[0], coord_2=[0], posture=6, traj = [0]):
         action_msg = action_info() # [action, material, grip_mode, coord, grip_size]
-
-        # 보내려는 값이 None일 시 해당 값은 디폴트 값으로 설정 후 publish
-        if material == None:
-            material = -1
-        if grip_mode == None:
-            grip_mode = "x"
-        if coord is None:
-            coord = self.init_pos
-        if coord_2 is None:
-            coord_2 = self.init_pos
-        if posture == None:
-            posture = 6            
 
         action_msg.action = action
         action_msg.material = material
         action_msg.grip_mode = grip_mode
         action_msg.coord = coord
         action_msg.coord_2 = coord_2
-        action_msg.posture = posture        
+        action_msg.posture = posture      
+        action_msg.traj = traj
         self.action_req.publish(action_msg)
 
 if __name__ == '__main__':

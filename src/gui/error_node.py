@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
 from tkinter import Tk, Button, Label
 
 # ROS 초기화 및 설정
 rospy.init_node('error_node', anonymous=True)
 # pub = rospy.Publisher('/menu_list', String, queue_size=10)
-error_complete_pub = rospy.Publisher('/error_complete', String, queue_size=10)  # error_complete 퍼블리셔 추가
+error_complete_pub = rospy.Publisher('/error_complete', Bool, queue_size=10)  # error_complete 퍼블리셔 추가
 
 def publish_error_complete():
     # "/error_complete" 토픽에 "error_complete" 메시지를 발행하는 함수
@@ -16,9 +16,13 @@ def publish_error_complete():
     error_complete_pub.publish(message)
 
 def callback(msg):
+    win_width = 350
+    wun_height = 400
+    win_x = 540
+    win_y = 960
     window = Tk()
     window.title("Menu Publish & Error")
-    window.geometry("400x350")  # 창 크기 설정
+    window.geometry("{win_width}x{win_height}+{win_x}")  # 창 크기 설정
 
     # "Error" 텍스트를 출력할 라벨 생성 (버튼 위에 위치)
     error_label = Label(window, text=msg.data, fg="black", font=("Arial", 20))

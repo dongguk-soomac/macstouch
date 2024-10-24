@@ -71,7 +71,7 @@ class Vision:
         
         self.rotation = [[-45, 0, 180], [45, 0, 180], [135, 0, 180], [-135, 0, 180]]
 
-        self.case_roi = [(615, 70, 200, 200), (615, 420, 200, 200), (620, 340, 200, 20)]
+        self.case_roi = [(370, 260, 200, 220), (800, 260, 200, 220), (675, 260, 20, 220)]
 
     def vision_callback(self, msg):
         target_idx = msg.data
@@ -117,7 +117,7 @@ class Vision:
                 print('depth done')
                 valid = self.coord_check(target, coord)
         elif target == 'case':
-            mode, coord = self.case_detection()
+            coord = self.case_detection()
             print('depth done')
         # else:
         #     while valid is False:
@@ -309,6 +309,7 @@ class Vision:
 
         roi1 = self.case_roi[0]  # (x, y, width, height)
         roi2 = self.case_roi[1]
+        roi3 = self.case_roi[2]
 
         cv2.rectangle(annotated_color, (roi1[0], roi1[1]), (roi1[0]+roi1[2], roi1[1]+roi1[3]), (255, 0, 0), 2)
         cv2.rectangle(annotated_color, (roi2[0], roi2[1]), (roi2[0]+roi2[2], roi2[1]+roi2[3]), (255, 0, 0), 2)
@@ -341,12 +342,13 @@ class Vision:
         cv2.rectangle(annotated_color, (x, y), (x+w, y+h), (150, 150, 0), 2)  # ROI 사각형 그리기
         cv2.putText(annotated_color, "{}".format(points_in_roi1), (int(roi1[0] + roi1[2]/2), int(roi1[1] + roi1[3]/2)), 0, 1.0, (0, 255, 255), 2)
         cv2.putText(annotated_color, "{}".format(points_in_roi2), (int(roi2[0] + roi2[2]/2), int(roi2[1] + roi2[3]/2)), 0, 1.0, (0, 255, 255), 2)
+        cv2.putText(annotated_color, "{}".format(int(mean_depth*0.1)), (int(roi3[0] + roi3[2]/2), int(roi3[1] + roi3[3]/2)), 0, 1.0, (0, 255, 255), 2)
 
         self.yolo_color = annotated_color
         self.yolo_depth = annotated_depth
 
 
-        return 'left' if points_in_roi1 > points_in_roi2 else 'right', [0, 0, mean_depth, 0, 0, 0]
+        return [0, 0, mean_depth*0.1, -90, 0, -90] if points_in_roi1 > points_in_roi2 else [0, 0, mean_depth*0.1, 90, 0, -90]
 
     
     def pub(self, target, mode, grip_pos, size):

@@ -230,7 +230,7 @@ def create_second_page():
     button_width = 340
     button_height = 335 
 
-    menu_list2button = ["제로 버거", "불고기 버거", "치즈 버거", "더블 치즈 버거"]
+    menu_list2button = ["제로 버거", "불고기 버거", "치즈 버거", "더블 패티 버거"]
     price_list2button = [4000, 5000, 6000, 7000]
 
     for i in range(4):

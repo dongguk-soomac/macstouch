@@ -65,7 +65,12 @@ class Action:
         self.sauce_pnp_offset_upward = [0, 0, 150, 0, 0, 0]
         self.sauce_pnp_offset_downward = [0, 0, -150, 0, 0, 0]
         
-        
+        # for lid close
+        self.lid_close_forward = [0, 50, 0, 0, 0, 0]
+        self.lid_close_backward = [0, -50, 0, 0, 0, 0]
+        self.lid_close_upward = [0, 0, 50, 0, 0, 0]
+        self.lid_close_downward = [0, 0, -50, 0, 0, 0]        
+
     # 소켓 통신으로 보내는 문자열 생성
     def make_str(self, *args):
         # 전달받은 모든 인자들을 문자열로 변환하고 +로 결합
@@ -102,6 +107,8 @@ class Action:
 
     def action_vision(self, vision_coord, posture):
         # 1. MV(Material_vision)
+        vision_coord =list(vision_coord)
+        vision_coord.append(posture)
         setdata1 = self.make_str("MovePoint", self.format_array(vision_coord))
         setdata = '='.join([setdata1])
         socke.send_data(setdata)
@@ -248,10 +255,6 @@ class Action:
 
         setdata = '='.join([setdata0, setdata1, setdata2, setdata3, setdata4, setdata5])
         socke.send_data(setdata)
-    
-    def action_back(self):        
-        setdata = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
-        socke.send_data(setdata)
 
     def action_place(self, place_coord, posture):
 
@@ -291,7 +294,6 @@ class Action:
         setdata6 = self.make_str("MoveOffset", self.format_array(self.list_add(self.pnp_offset_up, self.bread_offset_down)))
         
         # 7. 버거 뚜껑이 위치할 좌표 위로 이동
-
         offset_point_2 = self.list_add(bread_lib_coord, self.pnp_offset_up)
         offset_point_2.append(posture)
         setdata7 = self.make_str("MovePoint", self.format_array(offset_point_2))
@@ -380,7 +382,116 @@ class Action:
 
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
-    
+
+    def action_grill_open(self, traj, posture):
+        traj_num = len(traj)       
+        data_num = traj_num + 6
+        setdata = [''] * data_num
+ 
+        if traj[0][0] <= 0:
+            self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)            
+
+        # 그릴 손잡이 위치 + 오프셋 이동
+        offet_1 = self.list_add(self.list_add(traj[0], self.tool_offset_backward),self.tool_offset_upward)
+        offet_1.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+        # 그릴 손잡이 위치로 이동
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.tool_offset_downward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.tool_offset_forward)))
+
+        # 8. 속도 느리게
+        setdata.append(self.make_str("ChangeParam",  3))
+
+        for pos in traj[1:]:
+            pos.append(posture)
+            # setdata.append(self.make_str("MovePoint", self.format_array(pos))) 
+            setdata.append(self.make_str("MovePoint", self.format_array(pos))) 
+
+
+
+        setdata.append(self.make_str("Moveoffset", self.format_array(self.tool_offset_backward)))
+
+        # 8. 속도 보통
+        setdata.append(self.make_str("ChangeParam",  0))
+
+        if traj[0][0] <= 0:
+            self.tool_offset_backward = self.direction_change(self.tool_offset_backward)
+            self.tool_offset_forward = self.direction_change(self.tool_offset_forward)   
+
+        setdata = '='.join(setdata)        
+        socke.send_data(setdata) 
+
+    def action_grill_close(self, traj, posture):
+        pass
+
+    def action_lid_close(self, traj, posture):
+        traj_num = len(traj)       
+        data_num = traj_num + 6
+        setdata = [''] * data_num
+      
+        # 그릴 손잡이 위치 + 오프셋 이동
+        offet_1 = self.list_add(self.list_add(traj[0], self.lid_close_forward),self.lid_close_upward)
+        offet_1.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+        # 그릴 손잡이 위치로 이동
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.lid_close_downward)))
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.lid_close_backward)))
+
+        # 8. 속도 느리게 + overlap
+        setdata.append(self.make_str("ChangeParam",  3))
+
+        for pos in traj[1:]:
+            pos.append(posture)
+            # setdata.append(self.make_str("MovePoint", self.format_array(pos))) 
+            setdata.append(self.make_str("MovePoint", self.format_array(pos))) 
+
+        setdata.append(self.make_str("Moveoffset", self.format_array(self.lid_close_upward)))
+
+        # 8. 속도 보통
+        setdata.append(self.make_str("ChangeParam",  0))
+
+
+        setdata = '='.join(setdata)        
+        socke.send_data(setdata) 
+
+    def action_push(self, start_point, posture):
+        setdata = [''] * 5
+        setdata.append(self.make_str("Gripper", False))
+        # push 위치 + 상단 offset 이동
+        offet_1 = self.list_add(start_point, self.lid_close_upward)
+        offet_1.append(posture)
+        setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+        # push 위치로 offset 이동
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.lid_close_downward)))
+        
+        # push 진행
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.push_length)))
+
+        # 다시 올라오기(뒤로 + 위로 offset)
+        push_back = self.direction_change(self.push_length)
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.list_add(push_back, self.lid_close_upward))))
+
+        setdata = '='.join(setdata)        
+        socke.send_data(setdata) 
+
+
+    def action_test_pos(self, target_pos, posture):
+        # 1. 그리퍼 열기
+        setdata1 = self.make_str("Gripper", True)
+        # 8. 속도 보통
+        setdata2 = self.make_str("ChangeParam",  1)
+        target_pos = list(target_pos)
+        target_pos.append(posture)
+        setdata3 = self.make_str("MovePoint", self.format_array(target_pos))
+        # 8. 속도 보통
+        setdata4 = self.make_str("ChangeParam",  0)        
+        setdata = '='.join([setdata1, setdata2, setdata3, setdata4])
+        socke.send_data(setdata)  
+          
     def sauce_traj(self, center_coord, r, n, posture):
         # 각도를 n 개로 분할
         angles = np.linspace(0, 2 * np.pi, n)
@@ -425,7 +536,13 @@ class Ros():
         target_position = msg.coord     # FloatArray
         target_position_2 = msg.coord_2        # Float32
         posture = msg.posture
-        print(f"Action: {action_name}, Index: {index}, Grip Mode: {grip_mode}, "
+        if len(msg.traj) >= 6:
+            traj = list(map(list, list(np.array(list(msg.traj)).reshape((-1,6)))))
+            print(traj)
+        else:
+            traj = msg.traj
+
+        print(f"Action: {action_name}, Index: {index}, Gr)ip Mode: {grip_mode}, "
             f"Target Position: {target_position}, Target Position_2: {target_position_2}")
         
 
@@ -451,7 +568,21 @@ class Ros():
         elif action_name == "bread_close":
             action.action_bread_close(target_position, target_position_2, posture)                            
         elif action_name == "sauce_place":
-            action.action_sauce_place(target_position, posture)                                     
+            action.action_sauce_place(target_position, posture) 
+
+        elif action_name == "grill_open":
+            action.action_grill_open(traj, posture)     
+        elif action_name == "grill_close":
+            action.action_grill_close(traj, posture)  
+
+        elif action_name == "lid_close":
+            action.action_lid_close(traj, posture)       
+
+        elif action_name == "push":
+            action.action_push(target_position, target_position_2, posture)
+
+        elif action_name == "test_pos":
+            action.action_test_pos(target_position, posture)                                                    
                                 
                                 
 

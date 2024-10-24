@@ -20,14 +20,13 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-    test_index = 5
+    test_index = 1
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')
         control_req = rospy.Publisher('/control_req', control_info, queue_size=10)    
         control_data = control_info()
         
-
         if mode== 'init_pos':
             control_data.mode = 'init_pos'
             control_data.material = -1
@@ -37,6 +36,27 @@ def main():
             control_req.publish(control_data)
             print('Mode : init_pos')
             print(control_data)
+
+        if mode== 'grill':
+            control_data.mode = 'grill'
+            control_data.material = -1
+            control_data.grip_mode = 'x'
+            control_data.coord = [0, 0, 0, 0, 0, 0]
+            control_data.size = 30
+            control_req.publish(control_data)
+            print('Mode : init_pos')
+            print(control_data)
+
+        elif mode== 'test_pos':
+            control_data.mode = 'test_pos'
+            control_data.material = -1
+            control_data.grip_mode = 'x'
+            control_data.coord = [-300, -383.362, 123.492, -135, 90, 45]
+            control_data.size = 30
+            control_req.publish(control_data)
+            print('Mode : vision')
+            print(control_data)
+
 
         elif mode== 'vision':
             control_data.mode = 'vision'

@@ -15,14 +15,15 @@ import numpy as np
 # from macstouch_config import *
 from task_maker import Task
 
-MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce"]
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce", "case"]
 Loadcell = ["bread", "meat", "lettuce", "tomato", "onion", "pickle"]
 WeightLimit = [100, -100, 100, 100, 100, -1000]
-ModeList = ["init_pos", "vision", "pnp", "tool_return"]
+ModeList = ["init_pos", "grill", "vision", "pnp", "tool_return"]
 
 
 OrderList = []
 IngId = None
+MeatNum = 2
 
 
 class Burger:
@@ -61,24 +62,35 @@ class GUI:
 class WorkSpace:
     def __init__(self):
         self.mat_sub = rospy.Subscriber('/material_info', Float32MultiArray, self.mat_callback, queue_size=10)
-        self.mat_pub = rospy.Publisher('/error_info', String, queue_size=10)
+        self.error_pub = rospy.Publisher('/error_info', String, queue_size=10)
+        self.error_sub = rospy.Subscriber('/error_complete', Bool, self.error_callback, queue_size=10)
+
         self.weights_limit = np.array(WeightLimit)
         self.weights = []
+        self.error_state = False
 
     def mat_callback(self, msg):
         self.weights = np.array(msg.data)
-        self.mat_check()
+        if not self.error_state:
+            self.mat_check()
 
     def mat_check(self):
-        lack_mat = ""
+        lack_num = 0
+        lack_mat = []
         lack_str = "Lack of material: "
         dis = self.weights - self.weights_limit
         for idx, dis in enumerate(dis):
             if dis < 0:
-                self.mat_pub.publish(lack_str + Loadcell[idx])
+                lack_num += 1
+                lack_mat.append(Loadcell[idx])
 
-    def pickup_check(self):
-        pass
+        if lack_num > 0:
+            lack_mat_str = ', '.join(lack_mat)
+            self.error_pub.publish(lack_str + lack_mat_str)
+            self.error_state = True
+
+    def error_callback(self, msg):
+        self.error_state = False
 
 
 class Vision:
@@ -127,6 +139,13 @@ class Request:
             request.grip_mode = '0'
             request.coord = [0, 0, 0, 0, 0, 0]
             request.size = 30
+
+        elif mode == 'grill': # grill
+            request.mode = mode
+            request.material = 1
+            request.grip_mode = '0'
+            request.coord = [0, 0, 0, 0, 0, 0]
+            request.size = 2
 
         elif mode == 'tool_get': # tool_get
             request.mode = mode
@@ -209,7 +228,7 @@ class Request:
 
 
 def main():
-    global IngId, OrderList
+    global IngId, OrderList, MeatNum
 
     rospy.init_node("main_node")
     rate = rospy.Rate(10)
@@ -230,27 +249,39 @@ def main():
             IngId = OrderList[0].id
             OrderList[0].state = "Ing"
             req.task_list = task.order_to_task(OrderList[0].menu)
+            MeatNum -= OrderList[0].menu[1]
             print(req.task_list)
         
         if IngId is None:
-            print('주문이 없습니다.')
-            rate.sleep()
-            continue
+            if MeatNum <= 1:
+                IngId = 0
+                req.task_list = [{'mode': 'grill', 'material': 1}]
+            else:
+                print('주문이 없습니다.')
+                rate.sleep()
+                continue
 
         step, status = req.task_control(step)
 
         if status != 'Done':
-            print("들어온 주문 수 : ", len(OrderList))
-            print("현재 진행 중인 주문 : ", IngId)
-            print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
+            if IngId:
+                print("들어온 주문 수 : ", len(OrderList))
+                print("현재 진행 중인 주문 : ", IngId)
+                print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
+            else:
+                print("들어온 주문 수 : ", len(OrderList))
+                print("그릴에서 패티를 가져오고 있습니다....")
 
         else:
-            print("{} 제작이 완료되었습니다.".format(IngId))
-            gui.order_complete(IngId)
+            if IngId:
+                print("{} 제작이 완료되었습니다.".format(IngId))
+                gui.order_complete(IngId)
+
             IngId = None
             step = 0
             status = None
             req.task_list = None
+
 
 
 

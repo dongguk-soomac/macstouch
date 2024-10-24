@@ -25,6 +25,10 @@ max_menu_limit = 9
 
 custum_menu_list = []
 
+menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "소스", "토마토", "양상추", '']
+price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
+
+
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
@@ -48,7 +52,7 @@ def resize_image(image_path, scale=2/3):
     """이미지의 크기를 scale 비율만큼 줄임"""
     img = Image.open(image_path)
     new_size = (int(img.width * scale), int(img.height * scale))
-    img = img.resize(new_size, Image.ANTIALIAS)
+    img = img.resize(new_size, Image.Resampling.LANCZOS)  # ANTIALIAS 대신 Image.Resampling.LANCZOS 사용
     return ImageTk.PhotoImage(img)
 
 
@@ -126,7 +130,7 @@ def create_third_page():
             image=button_image,
             borderwidth=0,
             highlightthickness=0,
-            command=lambda i=i: print(f"button {i+1} clicked"),
+            command=lambda i=i: [print(f"button {i+1} clicked"), print_menu(i)],
             relief="flat"
         )
         button.place(
@@ -136,7 +140,7 @@ def create_third_page():
             height=button_height
         )
 
-        menu_list2button = ["bread", "meat", "cheeze", "pickle", "onion", "sauce", "tomato", "lettuce", '']
+        menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "소스", "토마토", "양상추", '']
         price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
 
         # 버튼 위에 텍스트를 Label로 생성
@@ -218,7 +222,7 @@ def create_third_page():
 
         custum_menu_list.append(menu_num)
 
-        tempo_menu.append(price_list[menu_num])
+        tempo_menu.append(price_list2button[menu_num])
         print(tempo_menu)
         # canvas2.delete()
 
@@ -234,7 +238,7 @@ def create_third_page():
             754.0,
             menu_y_position,
             anchor="nw",
-            text=price_list[menu_num],
+            text=price_list2button[menu_num],
             fill="#000000",
             font=("Inter", 24 * -1)
         )
@@ -254,7 +258,7 @@ def create_third_page():
             81.0,
             menu_y_position,
             anchor="nw",
-            text=menu_list[menu_num],
+            text=menu_list2button[menu_num],
             fill="#000000",
             font=("Inter", 24 * -1)
         )

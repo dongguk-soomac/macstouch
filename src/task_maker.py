@@ -22,7 +22,14 @@ class Task:
         # order.append(1)
         tasks = [self.templete[0]]
         # tasks = []
-        
+
+        # case
+        tool_get = self.make_task(1, 9)
+        vision = self.make_task(2, 9)
+        pnp = self.make_task(3, 9)
+        tasks.append(tool_get)
+        tasks.append(vision)
+        tasks.append(pnp)
 
         for material, repeat in enumerate(order):
             if material == 0:
