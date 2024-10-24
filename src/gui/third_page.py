@@ -11,6 +11,7 @@ from selected_menu import menu_index
 # from macstouch.msg import order
 from PIL import Image, ImageTk
 
+
 #변수 선언
 tempo_menu = []
 
@@ -31,7 +32,11 @@ price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, '']
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets")
+
+def relative_to_assets_1(path: str) -> Path:
+    return ASSETS_PATH_1 / Path(path)
 
 from menu_info import menu_list, price_list 
 
@@ -39,12 +44,12 @@ def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
 def open_second_page(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
     sleep(1)
     window.destroy() 
 
@@ -101,7 +106,7 @@ def create_third_page():
     ########################## 햄버거 재료 버튼 ###############################
 
     # 이미지 리사이즈 (2/3 크기)
-    button_image = resize_image(relative_to_assets_2("button_1.png"))
+    # button_image = resize_image(relative_to_assets_2("button_1.png"))
 
     # 버튼 크기 및 배치 설정
     button_width = 340  # 버튼 너비 (화면 크기에 맞춰 조정)
@@ -121,10 +126,17 @@ def create_third_page():
         (720, 1006)  # 세 번째 줄 세 번째 버튼 좌표
     ]
 
-    # buttons = []
-    # texts= [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    button_images = []  # 이미지 객체를 저장할 리스트
+
     for i in range(9):
         # 버튼 생성
+        button_image_original = Image.open(relative_to_assets_1(f"download({i}).png"))
+        button_image_resized = button_image_original.resize((335, 335))  # 원하는 크기로 리사이즈
+        button_image = ImageTk.PhotoImage(button_image_resized)
+
+        # 이미지 객체를 리스트에 저장하여 메모리에서 유지
+        button_images.append(button_image)
+
         button = Button(
             window,
             image=button_image,
@@ -140,24 +152,7 @@ def create_third_page():
             height=button_height
         )
 
-        menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "소스", "토마토", "양상추", '']
-        price_list2button = [500, 1000, 500, 500, 500, 500, 1000, 500, ''] 
-
-        # 버튼 위에 텍스트를 Label로 생성
-        label = Label(
-            window,
-            text="{}\n{}".format(menu_list2button[i], price_list2button[i]),
-            bg="#FFFFFF",  # 배경색 설정
-            fg="black",  # 글자색 설정
-            font=("Inter", 20 * -1)
-        )
-        label.place(
-            x=positions[i][0] + button_width // 2 - 15,  # 텍스트의 위치를 버튼 중앙으로 조정
-            y=positions[i][1] + button_height // 2 - 30
-        )
-
-
-    window.resizable(False, False)
+    # window.resizable(False, False)
 
     ###############################################
 
@@ -272,7 +267,7 @@ def create_third_page():
             font=("Inter", 35 * -1)
         )
 
-        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
             file.write(f"menu_index = {custum_menu_list}\n")
 
             menu_y_position += menu_offset
