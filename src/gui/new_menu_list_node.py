@@ -34,13 +34,16 @@ def menu_callback(data):
         print("page 2")
         # print("hello")
         if menu_index == "[0]":
-            order_msg.menu = [2, 1, 0, 3, 1, 1, 0, 0, 1]  # 불고기 버거
-
-        elif menu_index == "[1]":
+            # order_msg.menu = [2, 1, 0, 3, 1, 1, 0, 0, 1]  # 불고기 버거
             order_msg.menu = [2, 1, 1, 3, 1, 0, 1, 1, 1]  # 제로 버거
 
-        elif menu_index == '[2]':
+        elif menu_index == "[1]":
+            # order_msg.menu = [2, 1, 1, 3, 1, 0, 1, 1, 1]  # 제로 버거
             order_msg.menu = [2, 1, 1, 3, 1, 0, 1, 0, 1]  # 치즈 버거
+
+        elif menu_index == '[2]':
+            # order_msg.menu = [2, 1, 1, 3, 1, 0, 1, 0, 1]  # 치즈 버거
+            order_msg.menu = [2, 1, 0, 3, 1, 1, 0, 0, 1]  # 불고기 버거
 
         elif menu_index == '[3]':
             order_msg.menu = [2, 2, 0, 3, 1, 0, 1, 1, 1]  # 더블 패티 버거

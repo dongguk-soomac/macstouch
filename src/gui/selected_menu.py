@@ -1,3 +1,3 @@
-page = 3
-menu_index = []
-menu_count = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+page = 2
+menu_index = [1]
+menu_count = [1]
