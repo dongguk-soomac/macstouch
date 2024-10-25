@@ -110,19 +110,19 @@ def create_second_page():
 
     size = 505
 
-    image_image_9_original = Image.open(relative_to_assets_1("zero.png"))
+    image_image_9_original = Image.open(relative_to_assets_1("zero(1).png"))
     image_image_9_resized = image_image_9_original.resize((size, size))  # 원하는 크기로 리사이즈
     image_image_9 = ImageTk.PhotoImage(image_image_9_resized)
 
-    image_image_6_original = Image.open(relative_to_assets_1("cheeze.png"))
+    image_image_6_original = Image.open(relative_to_assets_1("cheeze(1).png"))
     image_image_6_resized = image_image_6_original.resize((size, size))  # 원하는 크기로 리사이즈
     image_image_6 = ImageTk.PhotoImage(image_image_6_resized)
 
-    image_image_7_original = Image.open(relative_to_assets_1("meat.png"))
+    image_image_7_original = Image.open(relative_to_assets_1("meat(1).png"))
     image_image_7_resized = image_image_7_original.resize((size, size))  # 원하는 크기로 리사이즈
     image_image_7 = ImageTk.PhotoImage(image_image_7_resized)
 
-    image_image_8_original = Image.open(relative_to_assets_1("double_patty.png"))
+    image_image_8_original = Image.open(relative_to_assets_1("double(1).png"))
     image_image_8_resized = image_image_8_original.resize((size, size))  # 원하는 크기로 리사이즈
     image_image_8 = ImageTk.PhotoImage(image_image_8_resized)
 
