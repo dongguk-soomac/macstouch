@@ -26,8 +26,8 @@ max_menu_limit = 9
 
 custum_menu_list = []
 
-menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "토마토", "양상추", "바베큐 소스", "햄버거 소스(품절)"]
-price_list2button = [700, 1200, 400, 500, 500, 600, 500, 200, ""] 
+menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "햄버거 소스", "바베큐 소스(품절)", "토마토", "양상추"]
+price_list2button = [700, 1200, 400, 500, 500, 200, "", 600, 500] 
 
 
 # 경로 설정
@@ -147,26 +147,6 @@ def create_third_page():
             width=button_width,
             height=button_height
         )
-        # canvas2.create_text(
-        #     positions[8][0] + button_width / 2,  # X 좌표 (9번째 버튼의 가운데)
-        #     positions[8][1] + button_height / 2,  # Y 좌표 (9번째 버튼의 가운데)
-        #     anchor="nw",
-        #     text="Sold Out",
-        #     fill="red",
-        #     font=("Inter", 24 * -1),
-        #     tag="menu_text"
-        # )
-    # canvas2.create_text(
-    #     544.0,
-    #     500,
-    #     anchor="nw",
-    #     text="hello world",
-    #     fill="#000000",
-    #     font=("Inter", 24 * -1),
-    #     tag="menu_text"
-    # )
-
-    # window.resizable(False, False)
 
     ##############################################
 
@@ -232,7 +212,7 @@ def create_third_page():
         global max_menu_limit, menu_offset, menu_y_position, custum_menu_list
 
         # 선택된 메뉴 수량 증가
-        if menu_num != 8:
+        if menu_num != 6:
             menu_count[menu_num] += 1
 
         print(menu_count)
