@@ -20,7 +20,7 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-    test_index = 1
+    test_index = 10
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')

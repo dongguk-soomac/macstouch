@@ -110,11 +110,18 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
         rz, ry, rx = -90, 0, -180
 
     if material_index == 9: # case
-        z_offset_for_each_index = 0
-
-        pick_coord[0] = 0
-        pick_coord[1] = 409.583
+        z_offset_for_each_index = 87.5 - 5
         rz, ry, rx = materail_coord[3:6]
+
+        if rz < 0:
+
+            pick_coord[0] = -173.787 + 181
+            pick_coord[1] = 400.132
+
+        else: 
+
+            pick_coord[0] = 163 - 181
+            pick_coord[1] = 408
 
     # z방향 pick좌표 설정
     pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
@@ -146,10 +153,12 @@ class ManageCoord:
         self.grill_meat_offset = deepcopy(coordinates_data["grill_meat_offset"]) # 그릴 패티 간격, 튜닝 필요  
 
 
-
+        
+        self.case_coord[1] += 181
+        self.case_coord[2] -= 87.5
         # 빵, 패티, 그릴 패티의 초기 index 설정
         self.bread_index = 0
-        self.meat_index = 2     
+        self.meat_index = 0
         self.grill_meat_index = 0           
 
         # 토마토, 피클의 place 위치 보정
@@ -167,13 +176,12 @@ class ManageCoord:
         meat_index_is_1 = deepcopy(self.meat_coord)
         meat_index_is_2 = deepcopy(self.meat_coord) # 기준
         meat_index_is_3 = deepcopy(self.meat_coord)
-
-        meat_index_is_0[2] += self.meat_offset[2]
         
-        meat_index_is_1[2] += self.meat_offset[2]
         meat_index_is_1[0] -= self.meat_offset[0]
+        meat_index_is_2[2] += self.meat_offset[2]
         
         meat_index_is_3[0] -= self.meat_offset[0]
+        meat_index_is_3[2] += self.meat_offset[2]
 
         self.meat_coord_list = [meat_index_is_0, meat_index_is_1, meat_index_is_2, meat_index_is_3]
 
@@ -312,6 +320,9 @@ class Control:
             else:
                 self.tool_coord[i][0] += 158.2
 
+        self.tool_coord[9][0] += np.cos((self.tool_coord[9][3]+90) * np.pi/180) * 158.2
+        self.tool_coord[9][1] += np.sin((self.tool_coord[9][3]+90) * np.pi/180) * 158.2
+
         for idx, _ in enumerate(self.grill_open_traj):
             self.grill_open_traj[idx][0] -= tool_length[1]
 
@@ -389,6 +400,8 @@ class Control:
                 print('##### [Mode : tool_return] step_1 : tool_return')
                 if self.material == 0 or self.material == 1 or self.material == 2 or self.material == 5 or self.material == 6: # 빵 혹은 패티                
                     self.control_action_pub('tool_return', coord=self.tool_coord[self.material], posture=2)     
+                elif self.material == 9:
+                    self.control_action_pub('tool_return_45', coord=self.tool_coord[self.material], posture=2)
                 else:
                     self.control_action_pub('tool_return', coord=self.tool_coord[self.material])    
                 self.action_state += 1
@@ -403,7 +416,12 @@ class Control:
         if self.action_state == 1:
             print('##### [Mode : tool_get] step_1 : tool_get')
             if self.material == 0 or self.material == 1: # 빵 혹은 패티
-                self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material], posture=2)            
+                self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material], posture=2)    
+            
+            elif self.material == 9:
+                self.control_action_pub('tool_get_45', material=self.material, coord=self.tool_coord[self.material], posture=2)
+            elif self.material == 10:
+                self.control_action_pub('tool_get_45', material=self.material, coord=self.tool_coord[self.material], posture=2)
             else:
                 self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material])            
             self.action_state += 1                        
@@ -431,7 +449,7 @@ class Control:
                 print('##### [Mode : pnp] step_1 : pick action')                
                 pick_coord = transformation_camera(self.material, self.vision_coord[self.material], list(self.coord), self.grip_mode)
                 print(pick_coord)
-                self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=2) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
+                self.control_action_pub('pick', material=self.material, grip_mode=self.grip_mode, coord=pick_coord, posture=2) # client에서는 grip_mode를 바탕으로 pick 동작 구분            
                 self.action_state += 1
                     
             elif self.action_state == 2: # place 동작
@@ -447,7 +465,7 @@ class Control:
                     self.managecoord.change_place_coord(self.material) # place 위치 상승
 
                 elif self.material == 9: # case
-                    place_coord = self.managecoord.case_coord()
+                    place_coord = self.managecoord.case_coord
 
                 else:
                     place_coord = deepcopy(self.managecoord.place_coord)
@@ -468,7 +486,7 @@ class Control:
                 pick_coord = deepcopy(self.managecoord.bread_coord)
                 print(pick_coord)
 
-                self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=6)
+                self.control_action_pub('pick', material=self.material, grip_mode=self.grip_mode, coord=pick_coord, posture=6)
                 self.managecoord.change_bread_pick_coord()
                 self.action_state += 1
                     
@@ -489,7 +507,7 @@ class Control:
             pick_coord = deepcopy(self.managecoord.meat_coord_list[self.managecoord.meat_index])
             print(pick_coord)                      
             self.managecoord.change_meat_pick_coord()
-            self.control_action_pub('pick', grip_mode=self.grip_mode, coord=pick_coord, posture=6)
+            self.control_action_pub('pick', material=self.material, grip_mode=self.grip_mode, coord=pick_coord, posture=6)
 
             self.action_state += 1
                 
@@ -522,7 +540,7 @@ class Control:
 
         elif self.action_state == 4:
             print('##### [Mode : tool_return] step_3 : tool_get')
-            self.control_action_pub('tool_return', self.tool_coord[9])            
+            self.control_action_pub('tool_get_45', self.tool_coord[10])            
             self.action_state += 1
 
         elif self.action_state == 5:
@@ -537,7 +555,7 @@ class Control:
 
         elif self.action_state == 7:
             print('##### [Mode : tool_return] step_3 : tool_return')
-            self.control_action_pub('tool_return', self.tool_coord[0])            
+            self.control_action_pub('tool_return_45', self.tool_coord[10])            
             self.action_state += 1
 
         elif self.action_state == 8:
@@ -548,40 +566,50 @@ class Control:
             pass     
 
     def mode_grill(self):
+
         if self.action_state == 1:
+            print('##### [Mode : finish] step_1 : tool_get')
+            self.control_action_pub('tool_get', coord=self.tool_coord[1])            
+            self.action_state += 1
+
+        elif self.action_state == 2:
             print('##### [Mode : finish] step_1 : grill_open action')
             self.control_action_pub('grill_open', traj=np.ravel(np.array(self.grill_open_traj)), posture=6)            
             self.action_state += 1
 
-        elif self.action_state == 2:
+        elif self.action_state == 3:
             print('##### [Mode : finish] step_2 : grill : pick action')
             pick_coord = deepcopy(self.managecoord.grill_meat_coord_list[self.managecoord.grill_meat_index])
-            print(pick_coord)            
-            self.control_action_pub('pick', coord=pick_coord)
+            self.control_action_pub('pick',material=self.material, coord=pick_coord)
             self.managecoord.change_grill_meat_pick_coord()            
-            self.action_state += 1
-
-        elif self.action_state == 3:
-            print('##### [Mode : finish] step_3 : grill : place action')
-            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index-1], posture=6)
-            self.managecoord.meat_index -= 1
             self.action_state += 1
 
         elif self.action_state == 4:
-            print('##### [Mode : finish] step_2 : grill : pick action')
-            pick_coord = deepcopy(self.managecoord.grill_meat_coord_list[self.managecoord.grill_meat_index])
-            print(pick_coord)            
-            self.control_action_pub('pick', coord=pick_coord)
-            self.managecoord.change_grill_meat_pick_coord()            
+            print('##### [Mode : finish] step_3 : grill : place action')
+            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index+1], posture=6)
+            self.managecoord.meat_index += 1
             self.action_state += 1
 
         elif self.action_state == 5:
-            print('##### [Mode : finish] step_3 : grill : place action')
-            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index-1], posture=6)
-            self.managecoord.meat_index -= 1
+            print('##### [Mode : finish] step_2 : grill : pick action')
+            pick_coord = deepcopy(self.managecoord.grill_meat_coord_list[self.managecoord.grill_meat_index])
+            self.control_action_pub('pick', material=self.material, coord=pick_coord)
+            self.managecoord.change_grill_meat_pick_coord()            
             self.action_state += 1
 
-        elif self.action_state == 6: # grill is not open
+        elif self.action_state == 6:
+            print('##### [Mode : finish] step_3 : grill : place action')
+            self.control_action_pub('place', material=self.material, coord=self.managecoord.meat_coord_list[self.managecoord.meat_index+1], posture=6)
+            self.managecoord.meat_index += 1
+            self.action_state += 1
+
+        elif self.action_state == 7:
+            print('##### [Mode : finish] step_1 : tool_return')
+            self.control_action_pub('tool_return', coord=self.tool_coord[1])            
+            self.action_state += 1
+
+
+        elif self.action_state == 8: # grill is not open
             print('##### [Mode : pnp] patty is already full')
             self.pub_done()
 

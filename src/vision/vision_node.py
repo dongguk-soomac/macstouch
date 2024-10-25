@@ -19,7 +19,7 @@ from copy import deepcopy
 # from macstouch_config import MaterialList
 from realsense.realsense_camera import DepthCamera
 
-MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce"]
+MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce", "case"]
 VisionClass = ["pickle", "tomato"]
 resolution_width, resolution_height = (1280,  720)
 
@@ -71,7 +71,7 @@ class Vision:
         
         self.rotation = [[-45, 0, 180], [45, 0, 180], [135, 0, 180], [-135, 0, 180]]
 
-        self.case_roi = [(370, 260, 200, 220), (800, 260, 200, 220), (675, 260, 20, 220)]
+        self.case_roi = [(370, 260, 200, 220), (800, 260, 200, 220), (675, 310, 20, 100)]
 
     def vision_callback(self, msg):
         target_idx = msg.data
@@ -83,7 +83,7 @@ class Vision:
         self.pub(target_idx, mode, grip_pos, size)
 
     def detection(self, target):
-        mode = 0
+        mode = '0'
         coord = np.zeros(6)
         size = 0
 
@@ -305,7 +305,7 @@ class Vision:
         contdst = cv2.cvtColor(lab, cv2.COLOR_LAB2BGR)
         blurred = cv2.GaussianBlur(contdst, (3, 3), 0)
         canny = cv2.Canny(blurred, 50, 100)
-        cv2.imshow('Canny', canny)
+        # cv2.imshow('Canny', canny)
 
         roi1 = self.case_roi[0]  # (x, y, width, height)
         roi2 = self.case_roi[1]
