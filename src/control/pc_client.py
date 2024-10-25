@@ -36,6 +36,8 @@ class Action:
         self.init_pos = coordinates_data["init_pos"]
         # self.vision_pos = coordinates_data["vision_coord"]
         self.tool_pos = coordinates_data["tool_coord"]
+        # for push
+        self.push_length = coordinates_data["push_length"]
 
         ## offset
         # pick and place offset
@@ -68,11 +70,10 @@ class Action:
         self.sauce_pnp_offset_downward = [0, 0, -150, 0, 0, 0]
         
         # for lid close
-        self.lid_close_forward = [0, 50, 0, 0, 0, 0]
-        self.lid_close_backward = [0, -50, 0, 0, 0, 0]
-        self.lid_close_upward = [0, 0, 50, 0, 0, 0]
-        self.lid_close_downward = [0, 0, -50, 0, 0, 0]        
-
+        self.lid_close_forward = [0, 25, 0, 0, 0, 0]
+        self.lid_close_backward = [0, -25, 0, 0, 0, 0]
+        self.lid_close_upward = [0, 0, 25, 0, 0, 0]
+        self.lid_close_downward = [0, 0, -25, 0, 0, 0]        
 
         # for grill_open
         self.grill_offset_forward = [-150, 0, 0, 0, 0, 0]
@@ -207,21 +208,26 @@ class Action:
         offset_point = self.list_add(tool_position, tool_offset_back)
         offset_point.append(posture)
         setdata.append(self.make_str("MovePoint", self.format_array(offset_point)))
+        print("tool_coord : ", tool_position)
+        print("offset_point : ", offset_point)
 
         # 5. 장착 직전까지 이동
         setdata.append(self.make_str("MoveOffset", self.format_array(tool_offset_front)))
+        print("tool_offset_front : ", tool_offset_front)
         
         # 6. 속도 매우느림으로 변경
         setdata.append(self.make_str("ChangeParam",  1))
 
         # 7. 장착
         setdata.append(self.make_str("MoveOffset", self.format_array(tool_offset_front)))
+        print("tool_offset_front : ", tool_offset_front)
 
         # 8. 속도 보통으로 변경
         setdata.append(self.make_str("ChangeParam", 0))
 
         # 9. 위로
         setdata.append(self.make_str("MoveOffset",  self.format_array(self.tool_offset_upward)))
+        print("tool_offset_upward : ", self.tool_offset_upward)
         
         # 10. tool 변경
         setdata.append(self.make_str("ToolNum",  tool_index))
@@ -229,6 +235,7 @@ class Action:
         # 11. 뒤로 이동
         setdata.append(self.make_str("MoveOffset",  self.format_array(tool_offset_back)))
         print(tool_index)
+        print("tool_offset_back : ", tool_offset_back)
 
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
@@ -584,22 +591,26 @@ class Action:
         socke.send_data(setdata) 
 
     def action_push(self, start_point, posture):
-        setdata = [''] * 5
-        setdata.append(self.make_str("Gripper", False))
-        # push 위치 + 상단 offset 이동
-        offet_1 = self.list_add(start_point, self.lid_close_upward)
+        setdata = [''] * 6
+        setdata.append(self.make_str("Gripper", True))
+        # push 위치 + 상단, 후방 offset 이동
+        offet_1 = self.list_add(self.list_add(start_point, self.lid_close_upward), self.lid_close_backward)
         offet_1.append(posture)
         setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
 
-        # push 위치로 offset 이동
+        # 하단으로 offset
         setdata.append(self.make_str("MoveOffset", self.format_array(self.lid_close_downward)))
         
+        # 전방으로 offset
+        setdata.append(self.make_str("MoveOffset", self.format_array(self.lid_close_forward)))
+
         # push 진행
         setdata.append(self.make_str("MoveOffset", self.format_array(self.push_length)))
 
         # 다시 올라오기(뒤로 + 위로 offset)
         push_back = self.direction_change(self.push_length)
         setdata.append(self.make_str("MoveOffset", self.format_array(self.list_add(push_back, self.lid_close_upward))))
+        push_back = self.direction_change(self.push_length)
 
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
