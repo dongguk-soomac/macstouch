@@ -323,11 +323,16 @@ class Control:
         self.tool_coord[9][0] += np.cos((self.tool_coord[9][3]+90) * np.pi/180) * 158.2
         self.tool_coord[9][1] += np.sin((self.tool_coord[9][3]+90) * np.pi/180) * 158.2
 
+        self.tool_coord[10][0] += np.cos((self.tool_coord[10][3]+90) * np.pi/180) * 158.2
+        self.tool_coord[10][1] += np.sin((self.tool_coord[10][3]+90) * np.pi/180) * 158.2
+
         for idx, _ in enumerate(self.grill_open_traj):
             self.grill_open_traj[idx][0] -= tool_length[1]
 
         self.vision_coord[9] = deepcopy(coordinates_data["case_vision_coord"])
         self.vision_coord[9][1] += tool_length[9]
+        self.push_start[1] += np.cos(20 * np.pi/180)*204.5
+        self.push_start[2] -= np.sin(20*  np.pi/180)*204.5        
 
     def control_cb(self, data):
         print('control_req topic')
@@ -400,7 +405,7 @@ class Control:
                 print('##### [Mode : tool_return] step_1 : tool_return')
                 if self.material == 0 or self.material == 1 or self.material == 2 or self.material == 5 or self.material == 6: # 빵 혹은 패티                
                     self.control_action_pub('tool_return', coord=self.tool_coord[self.material], posture=2)     
-                elif self.material == 9:
+                elif self.material == 9 or self.material == 10:
                     self.control_action_pub('tool_return_45', coord=self.tool_coord[self.material], posture=2)
                 else:
                     self.control_action_pub('tool_return', coord=self.tool_coord[self.material])    
@@ -418,9 +423,7 @@ class Control:
             if self.material == 0 or self.material == 1: # 빵 혹은 패티
                 self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material], posture=2)    
             
-            elif self.material == 9:
-                self.control_action_pub('tool_get_45', material=self.material, coord=self.tool_coord[self.material], posture=2)
-            elif self.material == 10:
+            elif self.material == 9 or self.material == 10 :
                 self.control_action_pub('tool_get_45', material=self.material, coord=self.tool_coord[self.material], posture=2)
             else:
                 self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[self.material])            
@@ -610,11 +613,22 @@ class Control:
 
 
         elif self.action_state == 8: # grill is not open
-            print('##### [Mode : pnp] patty is already full')
+            print('##### [Mode : pnp] done')
             self.pub_done()
 
         else:
             pass          
+
+    def mode_push(self):        
+        if self.action_state == 1:
+            print('##### [Mode : push] step_1 : push')
+            self.control_action_pub('push', coord=self.push_start, posture=2)            
+            self.action_state += 1
+        
+        elif self.action_state == 2: # grill is not open
+            print('##### [Mode : pnp] done')
+            self.pub_done()
+
 
 
     def action(self):
@@ -654,6 +668,9 @@ class Control:
 
         elif self.mode == "grill":
             self.mode_grill()       
+        elif self.mode == "push":
+            self.mode_push()    
+
             
     def action_done_cb(self, data):
         self.action()

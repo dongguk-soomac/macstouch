@@ -20,7 +20,7 @@ def callback(data):
 def main():
     rospy.Subscriber('/done', Bool, callback)
     rate = rospy.Rate(10) # 10hz
-    test_index = 10
+    test_index = 8
     while not rospy.is_shutdown():
         mode = input("Mode : ") # Mode 입력
         print('[topic data]')
@@ -108,6 +108,16 @@ def main():
             control_req.publish(control_data)
             print('Mode : finish')
             print(control_data)    
+
+        elif mode== 'push':
+            control_data.mode = 'push'
+            control_data.material = -1
+            control_data.grip_mode = 'x'
+            control_data.coord = [-300, -383.362, 123.492, -135, 90, 45]
+            control_data.size = 30
+            control_req.publish(control_data)
+            print('Mode : vision')
+            print(control_data)
 
         else:
             print('해당 mode는 존재하지 않습니다.')
