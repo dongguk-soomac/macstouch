@@ -48,8 +48,8 @@ class Vision:
         self.yolo_depth = np.asanyarray(depth_raw_frame.get_data())
 
         # 그리퍼가 도달 가능한 범위 내에 있는지 확인하기 위한 좌표 (월드 좌표계)
-        self.coord_limit =  {"pickle":  [[-20, 20],[-20, 20], [25, 35]], 
-                             "tomato":  [[-20, 20],[-20, 20], [25, 35]],
+        self.coord_limit =  {"pickle":  [[-10, 10],[-10, 10], [25, 35]], 
+                             "tomato":  [[-10, 10],[-10, 10], [25, 35]],
                              "lettuce": [[0, 4],[0, 0], [25, 35]], 
                              "onion":   [[0, 4],[0, 0], [25, 35]]}
         # 후보 grip coord를 생성하기 위한 값 ( x, y, theta )
@@ -71,7 +71,7 @@ class Vision:
         
         self.rotation = [[-45, 0, 180], [45, 0, 180], [135, 0, 180], [-135, 0, 180]]
 
-        self.case_roi = [(370, 260, 200, 220), (800, 260, 200, 220), (675, 310, 20, 100)]
+        self.case_roi = [(390, 290, 200, 190), (730, 290, 200, 190), (650, 310, 20, 100)]
 
     def vision_callback(self, msg):
         target_idx = msg.data
@@ -144,7 +144,7 @@ class Vision:
 
         _bbox = None
 
-        center_weight = 0.0
+        center_weight = 0.1
         z_weight = 1
 
         for result in results:
@@ -348,7 +348,7 @@ class Vision:
         self.yolo_depth = annotated_depth
 
 
-        return [0, 0, mean_depth*0.1, -90, 0, -90] if points_in_roi1 > points_in_roi2 else [0, 0, mean_depth*0.1, 90, 0, -90]
+        return [0, 0, mean_depth*0.1, -90, 0, -91] if points_in_roi1 > points_in_roi2 else [0, 0, mean_depth*0.1, 90, 0, -91]
 
     
     def pub(self, target, mode, grip_pos, size):
@@ -375,7 +375,7 @@ def main():
         vision.depth_frame = depth_raw_frame.as_depth_frame()
         vision.depth_image = np.asanyarray(depth_raw_frame.get_data())
 
-        # vision.detection('case')
+        # vision.detection('lettuce')
         depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.depth_image, alpha=0.15), cv2.COLORMAP_JET)
         yolo_depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(vision.yolo_depth, alpha=0.15), cv2.COLORMAP_JET)
         

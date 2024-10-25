@@ -13,7 +13,7 @@ from selected_menu import menu_index, menu_count
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame2")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame2")
 
 def relative_to_assets(path: str) -> Path:
     return ASSETS_PATH_1 / Path(path)
@@ -33,7 +33,7 @@ def publish_order(menu_indx):
     rospy.loginfo(f"Published message: {order_msg}")
 
 def open_first_page(window):
-    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/first_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/first_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 

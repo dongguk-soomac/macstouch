@@ -4,7 +4,7 @@ from PIL import Image, ImageTk
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
 
 def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)

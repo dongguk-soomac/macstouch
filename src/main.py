@@ -253,13 +253,9 @@ def main():
             print(req.task_list)
         
         if IngId is None:
-            if MeatNum <= 1:
-                IngId = 0
-                req.task_list = [{'mode': 'grill', 'material': 1}]
-            else:
-                print('주문이 없습니다.')
-                rate.sleep()
-                continue
+            print('주문이 없습니다.')
+            rate.sleep()
+            continue
 
         step, status = req.task_control(step)
 
@@ -268,9 +264,6 @@ def main():
                 print("들어온 주문 수 : ", len(OrderList))
                 print("현재 진행 중인 주문 : ", IngId)
                 print(f"현재 진행 중인 단계 : {step} {req.task_list[step]}")
-            else:
-                print("들어온 주문 수 : ", len(OrderList))
-                print("그릴에서 패티를 가져오고 있습니다....")
 
         else:
             if IngId:

@@ -46,7 +46,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     camera_stand_to_center = 6.18 # 카메라 거치대부터 카메라 센터까지의 거리(x축 거리)
     camera_origin_translation_x = 9 # 카메라 원점 x 방향 조절
     camera_origin_translation_y = 25 # 카메라 원점 y 방향 조절
-    min_z = 40 # 그리퍼가 바닥과 충돌하지 않는 최소 높이
+    min_z = 35 # 그리퍼가 바닥과 충돌하지 않는 최소 높이
 
     z_offset_for_each_index = None
 
@@ -79,7 +79,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     #     rz, ry, rx = -90, 0, -180
 
     if material_index == 3: # pickle ### okay ###
-        z_offset_for_each_index = -10
+        z_offset_for_each_index = -16
         rz, ry, rx = materail_coord[3:6]
 
     if material_index == 4: # onion ### okay ###
@@ -98,7 +98,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     #     rz, ry, rx = -90, 0, -180
 
     if material_index == 7: # tomato
-        z_offset_for_each_index = -15
+        z_offset_for_each_index = -17
         rz, ry, rx = materail_coord[3:6] # from vision data
           
     if material_index == 8: # lettuce ### okay ###
@@ -116,12 +116,12 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
         if rz < 0:
 
             pick_coord[0] = -173.787 + 181
-            pick_coord[1] = 400.132
+            pick_coord[1] = 400.132 + 5
 
         else: 
 
             pick_coord[0] = 163 - 181
-            pick_coord[1] = 408
+            pick_coord[1] = 408 + 5
 
     # z방향 pick좌표 설정
     pick_coord[2] = np.max((pick_coord[2] - camera_z_offset - materail_coord[2] + z_offset_for_each_index, min_z))
@@ -146,7 +146,8 @@ class ManageCoord:
         self.meat_coord = deepcopy(coordinates_data["meat_coord"]) # 초기 패티 좌표
         self.grill_meat_coord = deepcopy(coordinates_data["grill_meat_coord"]) # 초기 그릴 패티 좌표  
 
-        self.bread_lid_coord = deepcopy(coordinates_data["bread_lid_coord"]) # 빵 뚜껑 좌표        
+        self.bread_lid_coord = deepcopy(coordinates_data["bread_lid_coord"]) # 빵 뚜껑 좌표
+        self.bread_lid_coord_2 = deepcopy(coordinates_data["bread_lid_coord"]) # 빵 뚜껑 좌표
         self.material_height = deepcopy(coordinates_data["material_height"]) # plac/e 높이 조절을 위한 재료 높이, 튜닝 필요
         self.bread_offset = deepcopy(coordinates_data["bread_offset"]) # 빵 간격, 튜닝 필요
         self.meat_offset = deepcopy(coordinates_data["meat_offset"]) # 패티 간격, 튜닝 필요
@@ -239,11 +240,11 @@ class ManageCoord:
 
     def tomato_place(self):
         tomato_place_coord = deepcopy(self.place_coord)
-        tomato_place_coord[0] -= self.tomato_offset
+        tomato_place_coord[0] += self.tomato_offset
         return tomato_place_coord 
     
     def pickle_place(self):
-        pickle_place_coord = deepcopy(self.place_coord)
+        pickle_place_coord = deepcopy(self.place_coord) 
         pickle_place_coord[0] -= self.pickle_offset
         
         if self.theta == None: # 피클 한개만 요청 받았을 때
@@ -475,7 +476,11 @@ class Control:
                     self.managecoord.change_place_coord(self.material) # place 위치 상승     
 
                 print('##### [Mode : pnp] step_2 : place action') 
-                self.control_action_pub('place', material=self.material, coord=place_coord, posture=2)  
+
+                if self.material == 7:
+                    self.control_action_pub('place_tomato', material=self.material, coord=place_coord, posture=2)  
+                else:
+                    self.control_action_pub('place', material=self.material, coord=place_coord, posture=2)  
                 print('Place coord : ', place_coord)
                 self.action_state += 1
 
@@ -528,40 +533,20 @@ class Control:
     def mode_finish(self):
         if self.action_state == 1:
             print('##### [Mode : finish] step_1 : tool_get')
-            self.control_action_pub('tool_get', coord=self.tool_coord[0])            
+            self.control_action_pub('tool_get', material=self.material, coord=self.tool_coord[0])            
             self.action_state += 1
 
         elif self.action_state == 2:
             print('##### [Mode : finish] step_2 : bread_close')
-            self.control_action_pub('bread_close', coord=self.managecoord.bread_lid_coord, coord_2=self.managecoord.place_coord)        
+            self.control_action_pub('bread_close', coord=self.managecoord.bread_lid_coord_2, coord_2=self.managecoord.place_coord)        
             self.action_state += 1
             
         elif self.action_state == 3:
             print('##### [Mode : tool_return] step_3 : tool_return')
-            self.control_action_pub('tool_return', self.tool_coord[0])            
+            self.control_action_pub('tool_return', coord=self.tool_coord[0])            
             self.action_state += 1
 
         elif self.action_state == 4:
-            print('##### [Mode : tool_return] step_3 : tool_get')
-            self.control_action_pub('tool_get_45', self.tool_coord[10])            
-            self.action_state += 1
-
-        elif self.action_state == 5:
-            print('##### [Mode : finish] step_4 : lid_close')
-            self.control_action_pub('lid_close', traj=np.ravel(np.array(self.lib_close_traj)), posture=2)            
-            self.action_state += 1
-
-        elif self.action_state == 6:
-            print('##### [Mode : finish] step_5 : push')
-            self.control_action_pub('push', coord=self.push_start, posture=2)            
-            self.action_state += 1
-
-        elif self.action_state == 7:
-            print('##### [Mode : tool_return] step_3 : tool_return')
-            self.control_action_pub('tool_return_45', self.tool_coord[10])            
-            self.action_state += 1
-
-        elif self.action_state == 8:
             print('##### [Mode : finish] step_4 : done')
             self.pub_done()
             self.managecoord.reset_place_coord()          
@@ -677,7 +662,7 @@ class Control:
         
     def control_action_pub(self, action="None", material=-1, grip_mode="None", coord=[0], coord_2=[0], posture=6, traj = [0]):
         action_msg = action_info() # [action, material, grip_mode, coord, grip_size]
-
+    
         action_msg.action = action
         action_msg.material = material
         action_msg.grip_mode = grip_mode

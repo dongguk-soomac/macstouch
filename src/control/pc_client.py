@@ -48,6 +48,8 @@ class Action:
         self.tool_offset_forward = [150, 0, 0, 0, 0, 0]
         self.tool_offset_backward = [-150, 0, 0, 0, 0, 0]
 
+        self.pnp_offset_tomato = [-40, 0, -100, 0, 0, 0]
+
         self.pnp_case_offset_up = [0, 0, 200, 0, 0, 0]
         self.tool_offset_slow_forward = [50, 0, 0, 0, 0, 0]
         self.tool_offset_slow_backward = [-50, 0, 0, 0, 0, 0]
@@ -330,8 +332,7 @@ class Action:
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
 
-
-    def action_pick(self, grip_mode, material_coord, posture):
+    def action_pick_lettuce(self, grip_mode, material_coord, posture):
         after_pick = list(deepcopy(material_coord))
         # after_pick[3:6] = -90, 0, 180 # 양상추 잡는 각도가 반대라 일단 보류 -> 추후 case 나누거나 중간 점 찾는 등으로 해결
         if material_coord[0] <= 0: # 방향 반대로
@@ -362,6 +363,42 @@ class Action:
             self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
 
         setdata = '='.join([setdata0, setdata1, setdata2, setdata3, setdata4, setdata5])
+        socke.send_data(setdata)
+
+    def action_pick(self, grip_mode, material_coord, posture):
+        after_pick = list(deepcopy(material_coord))
+        # after_pick[3:6] = -90, 0, 180 # 양상추 잡는 각도가 반대라 일단 보류 -> 추후 case 나누거나 중간 점 찾는 등으로 해결
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+        
+        setdata0 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_back))
+
+        # 2-1. 그리퍼
+        setdata1 = self.make_str("Gripper", True)
+        # 2-2. "재료 위치 + 오프셋"으로 이동
+        offset_point = self.list_add(material_coord, self.pnp_offset_up)
+        offset_point.append(posture)
+        setdata2 = self.make_str("MovePoint", self.format_array(offset_point))
+        setdata21 = self.make_str("ChangeParam",  4)
+        
+        # 2-3. 재료 위치로 이동 (오프셋만큼 이동)
+        setdata3 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_down))
+
+        # 3. gripper
+        setdata4 = self.make_str("Gripper", False)
+
+        # 4. 오프셋
+        setdata5 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_after_up))        
+        # offset_point_2 = self.list_add(after_pick, self.pnp_offset_after_up)
+
+        # offset_point_2.append(posture)
+        # setdata5 = self.make_str("MovePoint", self.format_array(offset_point_2))
+        setdata6 = self.make_str("ChangeParam",  0)
+
+        if material_coord[0] <= 0: # 방향 반대로
+            self.pnp_offset_back = self.direction_change(self.pnp_offset_back)
+
+        setdata = '='.join([setdata0, setdata1, setdata2, setdata3, setdata4, setdata5, setdata6])
         socke.send_data(setdata)
 
     def action_pick_case(self, index, material_coord, posture):
@@ -406,6 +443,23 @@ class Action:
         setdata3 = self.make_str("Gripper", True)
         # 4. 오프셋 위로 이동
         setdata4 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))
+
+        setdata = '='.join([setdata1, setdata2, setdata3, setdata4])
+        socke.send_data(setdata)
+
+    def action_place_tomato(self, place_coord, posture):
+
+        # 1. "오프셋"으로 이동
+        offset_point = self.list_add(place_coord, self.pnp_offset_up)
+        offset_point.append(posture)
+        setdata1 = self.make_str("MovePoint", self.format_array(offset_point))
+        # 2. 버거 위치로 이동
+        setdata2 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_tomato))
+        # 3. 그리퍼
+        setdata3 = self.make_str("Gripper", True)
+        # 4. 오프셋 위로 이동
+        setdata4 = self.make_str("MoveOffset", self.format_array(self.pnp_offset_up))
+
 
         setdata = '='.join([setdata1, setdata2, setdata3, setdata4])
         socke.send_data(setdata)
@@ -501,17 +555,24 @@ class Action:
         setdata.append(self.make_str("ChangeParam",  2))
 
         # 그리퍼 닫기
-        # setdata4 = self.make_str("Gripper", False)        
+        setdata4 = self.make_str("Gripper", False)        
         
         # 원 그리며 도포
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[1]))) 
+        # setdata4 = self.make_str("Gripper", True)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[2]))) 
+        # setdata4 = self.make_str("Gripper", False)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[3])))
+        # setdata4 = self.make_str("Gripper", True)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[4])))
+        # setdata4 = self.make_str("Gripper", False)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[5])))
+        # setdata4 = self.make_str("Gripper", True)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[6])))
+        # setdata4 = self.make_str("Gripper", False)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[7])))                                       
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
+        setdata4 = self.make_str("Gripper", True)        
 
         # 8. 속도 느리게
         setdata.append(self.make_str("ChangeParam",  0))
@@ -701,10 +762,14 @@ class Ros():
         elif action_name == "pick":
             if index == 9:
                 action.action_pick_case(index, target_position, posture)
+            elif index == 8 :
+                action.action_pick_lettuce(index, target_position, posture)
             else:
                 action.action_pick(index, target_position, posture)            
         elif action_name == "place":
             action.action_place(target_position, posture)
+        elif action_name == "place_tomato":
+            action.action_place_tomato(target_position, posture)
         elif action_name == "tool_return":
             action.tool_return(target_position, posture)
         elif action_name == "bread_place":
