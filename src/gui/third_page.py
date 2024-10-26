@@ -27,13 +27,13 @@ max_menu_limit = 9
 custum_menu_list = []
 
 menu_list2button = ["빵", "패티", "치즈", "피클", "양파", "햄버거 소스", "바베큐 소스(품절)", "토마토", "양상추"]
-price_list2button = [700, 1200, 400, 500, 500, 200, "", 600, 500] 
+price_list2button = [700, 1200, 400, 500, 500, "", 200, 600, 500] 
 
 
 # 경로 설정
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
-ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/mac/catkin_ws/src/macstouch/src/gui/build_figma/assets")
+ASSETS_PATH_2 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets/frame0")
+ASSETS_PATH_1 = OUTPUT_PATH / Path(r"/home/seojin/catkin_ws/src/macstouch/src/gui/build_figma/assets")
 
 def relative_to_assets_1(path: str) -> Path:
     return ASSETS_PATH_1 / Path(path)
@@ -44,12 +44,12 @@ def relative_to_assets_2(path: str) -> Path:
     return ASSETS_PATH_2 / Path(path)
 
 def open_second_page(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/second_page.py'])  # 세 번째 페이지 실행
     sleep(1)
     window.destroy()
 
 def open_buy(window):
-    subprocess.Popen(['python', '/home/mac/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
+    subprocess.Popen(['python', '/home/seojin/catkin_ws/src/macstouch/src/gui/fourth_page.py'])  # 구매 페이지 실행
     sleep(1)
     window.destroy() 
 
@@ -212,7 +212,7 @@ def create_third_page():
         global max_menu_limit, menu_offset, menu_y_position, custum_menu_list
 
         # 선택된 메뉴 수량 증가
-        if menu_num != 6:
+        if menu_num != 5:
             menu_count[menu_num] += 1
 
         print(menu_count)
@@ -273,7 +273,7 @@ def create_third_page():
             font=("Inter", 35 * -1)
         )
 
-        with open('/home/mac/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
+        with open('/home/seojin/catkin_ws/src/macstouch/src/gui/selected_menu.py', 'w') as file:
             file.write(f"page = 3\nmenu_index = {custum_menu_list}\nmenu_count = {menu_count}")
 
     window.resizable(False, False)
