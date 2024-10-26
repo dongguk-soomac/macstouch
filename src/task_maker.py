@@ -87,7 +87,7 @@ class Task:
                     tasks.append(tool_return)
 
             # 좌우 이동 시 꼬임 방지
-            if material == 2:
+            if material == 2 or material == 4 or material == 6:
                 tasks.append(self.templete[0])
 
             

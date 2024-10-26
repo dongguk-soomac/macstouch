@@ -144,7 +144,7 @@ class Vision:
 
         _bbox = None
 
-        center_weight = 0.1
+        center_weight = 0.005
         z_weight = 1
 
         for result in results:

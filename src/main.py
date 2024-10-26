@@ -17,7 +17,7 @@ from task_maker import Task
 
 MaterialList = ["bread", "meat", "cheeze", "pickle", "onion", "sauce1", "sauce2", "tomato", "lettuce", "case"]
 Loadcell = ["bread", "meat", "lettuce", "tomato", "onion", "pickle"]
-WeightLimit = [100, -100, 100, 100, 100, -1000]
+WeightLimit = [-999999999999, -999999999, 100, -999999, -9999999, -999999999999999]
 ModeList = ["init_pos", "grill", "vision", "pnp", "tool_return"]
 
 

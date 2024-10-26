@@ -534,7 +534,7 @@ class Action:
         socke.send_data(setdata)    
 
     def action_sauce_place(self, place_coord, posture):
-        setdata = [''] * 15
+        setdata = [''] * 14
         
         # 소스 위치 + 오프셋 이동
         offet_1 = self.list_add(place_coord, self.sauce_pnp_offset_upward)
@@ -555,7 +555,7 @@ class Action:
         setdata.append(self.make_str("ChangeParam",  2))
 
         # 그리퍼 닫기
-        setdata4 = self.make_str("Gripper", False)        
+        # setdata.append(self.make_str("Gripper", False))       
         
         # 원 그리며 도포
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[1]))) 
@@ -572,7 +572,7 @@ class Action:
         # setdata4 = self.make_str("Gripper", False)        
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[7])))                                       
         setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
-        setdata4 = self.make_str("Gripper", True)        
+        # setdata.append(self.make_str("Gripper", True))   
 
         # 8. 속도 느리게
         setdata.append(self.make_str("ChangeParam",  0))
@@ -581,6 +581,54 @@ class Action:
 
         setdata = '='.join(setdata)        
         socke.send_data(setdata) 
+
+    # def action_cheeze_place(self, place_coord, posture):
+    #     setdata = [''] * 15
+        
+    #     # 소스 위치 + 오프셋 이동
+    #     offet_1 = self.list_add(place_coord, self.sauce_pnp_offset_upward)
+    #     offet_1.append(posture)
+    #     setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+    #     # 소스 도포 위치로 이동
+    #     setdata.append(self.make_str("MoveOffset", self.format_array(self.list_add(self.sauce_pnp_offset_downward, self.sauce_offset_upward))))
+
+    #     n_value = 8
+    #     sauce_coord = self.list_add(place_coord, self.sauce_offset_upward)
+    #     sauce_circle = self.sauce_traj(sauce_coord, r = 15, n = n_value, posture = posture)
+
+    #     # 소스 도포 점의 첫 점으로 이동
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
+
+    #     # 8. 속도 느리게
+    #     setdata.append(self.make_str("ChangeParam",  2))
+
+    #     # 그리퍼 닫기
+    #     # setdata.append(self.make_str("Gripper", False))
+        
+    #     # 원 그리며 도포
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[1]))) 
+    #     # setdata4 = self.make_str("Gripper", True)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[2]))) 
+    #     # setdata4 = self.make_str("Gripper", False)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[3])))
+    #     # setdata4 = self.make_str("Gripper", True)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[4])))
+    #     # setdata4 = self.make_str("Gripper", False)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[5])))
+    #     # setdata4 = self.make_str("Gripper", True)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[6])))
+    #     # setdata4 = self.make_str("Gripper", False)        
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[7])))                                       
+    #     setdata.append(self.make_str("MovePoint", self.format_array(sauce_circle[0])))
+
+    #     # 8. 속도 느리게
+    #     setdata.append(self.make_str("ChangeParam",  0))
+
+    #     setdata.append(self.make_str("MovePoint", self.format_array(offet_1)))
+
+    #     setdata = '='.join(setdata)        
+    #     socke.send_data(setdata) 
 
     def action_grill_open(self, traj, posture):
         traj_num = len(traj)       
@@ -777,7 +825,7 @@ class Ros():
         elif action_name == "bread_close":
             action.action_bread_close(target_position, target_position_2, posture)                            
         elif action_name == "sauce_place":
-            action.action_sauce_place(target_position, posture) 
+            action.action_sauce_place(target_position, posture)
 
 
 

@@ -79,7 +79,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     #     rz, ry, rx = -90, 0, -180
 
     if material_index == 3: # pickle ### okay ###
-        z_offset_for_each_index = -16
+        z_offset_for_each_index = -15
         rz, ry, rx = materail_coord[3:6]
 
     if material_index == 4: # onion ### okay ###
@@ -89,7 +89,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
         # y
         pick_coord[1] = 5.948
         # z
-        z_offset_for_each_index = -20
+        z_offset_for_each_index = -22
         # rpy
         rz, ry, rx = -90, 0, -180
 
@@ -98,7 +98,7 @@ def transformation_camera(_material_index, _pick_coord, _materail_coord, _mode):
     #     rz, ry, rx = -90, 0, -180
 
     if material_index == 7: # tomato
-        z_offset_for_each_index = -17
+        z_offset_for_each_index = -20
         rz, ry, rx = materail_coord[3:6] # from vision data
           
     if material_index == 8: # lettuce ### okay ###
@@ -165,7 +165,7 @@ class ManageCoord:
         # 토마토, 피클의 place 위치 보정
         self.tomato_offset = 20
         self.pickle_offset = 5
-        self.pickle_r = 15
+        self.pickle_r = 10
         self.pickle_count_bool = 0
         self.pickle_num = 0
         self.theta = None
@@ -275,6 +275,7 @@ class ManageCoord:
     
     def sauce_place_coord(self):
         sauce_coord = deepcopy(self.place_coord)
+        sauce_coord[2] -= 25
         sauce_coord[3] = 0
         sauce_coord[4] = 0
         sauce_coord[5] = -90
@@ -460,7 +461,7 @@ class Control:
                 # 재료에 따른 place 위치 보정
                 if self.material == 3: # 피클
                     self.managecoord.pickle_count(self.size)
-                    place_coord = self.managecoord.pickle_place()
+                    place_coord = deepcopy(self.managecoord.pickle_place())
                     if self.managecoord.pickle_count_bool == 0: # place 위치 상승
                         self.managecoord.change_place_coord(self.material) 
 
@@ -470,10 +471,12 @@ class Control:
 
                 elif self.material == 9: # case
                     place_coord = self.managecoord.case_coord
-
                 else:
                     place_coord = deepcopy(self.managecoord.place_coord)
                     self.managecoord.change_place_coord(self.material) # place 위치 상승     
+
+                if self.material == 4: # onion
+                    place_coord[2] += 10
 
                 print('##### [Mode : pnp] step_2 : place action') 
 
@@ -538,6 +541,8 @@ class Control:
 
         elif self.action_state == 2:
             print('##### [Mode : finish] step_2 : bread_close')
+            finish_place = deepcopy(self.managecoord.place_coord)
+            finish_place[2] -= 80
             self.control_action_pub('bread_close', coord=self.managecoord.bread_lid_coord_2, coord_2=self.managecoord.place_coord)        
             self.action_state += 1
             
